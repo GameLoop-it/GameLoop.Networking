@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using GameLoop.Networking.Memory;
+using GameLoop.Networking.Statistics;
 
 namespace GameLoop.Networking.Sockets
 {
@@ -15,10 +16,9 @@ namespace GameLoop.Networking.Sockets
         // So they are 28 bytes just for packet's header. Let's say 32 bytes.
         // Our payload MTU is: 1500 - 32 = 1468 bytes.
         private const int PacketMtu = 1500 - 32;
-
         private const int ReceiverBufferSize = PacketMtu;
 
-        //public Action<EndPoint, byte[]> OnDataArrived;
+        public NetworkSocketStatistics Statistics;
 
         private Socket _socket;
         private EndPoint _listeningEndPoint;
@@ -37,6 +37,7 @@ namespace GameLoop.Networking.Sockets
             _memoryPool = pool;
             _dataBuffer = pool.Rent(ReceiverBufferSize);
             _arrivedDataQueue = new ConcurrentQueue<NetworkArrivedData>();
+            Statistics = NetworkSocketStatistics.Create();
         }
 
         public void Bind(IPEndPoint endpoint)
@@ -121,7 +122,8 @@ namespace GameLoop.Networking.Sockets
             
             // Start listening again, while we handle the current received data.
             Listen();
-            
+
+            Statistics.BytesReceived += (ulong)receivedBytes;
             _arrivedDataQueue.Enqueue(new NetworkArrivedData() { EndPoint = remoteEndpoint, Data = buffer });
         }
 
@@ -133,6 +135,7 @@ namespace GameLoop.Networking.Sockets
         public void SendTo(IPEndPoint endPoint, byte[] data)
         {
             _socket.BeginSendTo(data, 0, data.Length, SocketFlags.None, endPoint, null, null);
+            Statistics.BytesSent += (ulong)data.Length;
         }
 
         public bool Poll(out NetworkArrivedData data)

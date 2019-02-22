@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace GameLoop.Networking.Memory
 {
     public sealed class SimpleMemoryPool : IMemoryPool
@@ -9,11 +11,13 @@ namespace GameLoop.Networking.Memory
             _allocator = allocator;
         }
         
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public byte[] Rent(int minimumSize)
         {
             return _allocator.Allocate(minimumSize);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Release(byte[] chunk)
         {
             // This simple pool does not care of releasing your shit. ;)

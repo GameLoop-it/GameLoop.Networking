@@ -32,7 +32,7 @@ namespace GameLoop.Networking.Tests
             var sendingAddress2 = new IPEndPoint(IPAddress.Loopback, 50000);
 
             var dataToSend1 = new byte[] {10, 9, 8, 7, 6, 5};
-            var dataToSend2 = new byte[] {0, 1, 2, 3, 4, 5};
+            var dataToSend2 = new byte[] {0, 1, 2, 3, 4, 5, 6, 7, 8};
 
             byte[] arrivedData1 = default(byte[]);
             EndPoint arrivedEndpoint1 = default(EndPoint);
@@ -71,13 +71,24 @@ namespace GameLoop.Networking.Tests
             for (int i = 0; i < arrivedData1.Length; i++)
             {
                 Assert.Equal(arrivedData1[i], dataToSend2[i]);
+                
+                //_testOutputHelper.WriteLine(arrivedData1[i].ToString() + " == " + dataToSend2[i].ToString());
+            }
+            
+            for (int i = 0; i < arrivedData2.Length; i++)
+            {
                 Assert.Equal(arrivedData2[i], dataToSend1[i]);
                 
-                _testOutputHelper.WriteLine(arrivedData1[i].ToString() + " == " + dataToSend2[i].ToString() + "  |  " + arrivedData2[i].ToString() + " == " + dataToSend1[i].ToString());
+                //_testOutputHelper.WriteLine(arrivedData2[i].ToString() + " == " + dataToSend1[i].ToString());
             }
             
             Assert.Equal(arrivedEndpoint1, sendingAddress1);
             Assert.Equal(arrivedEndpoint2, sendingAddress2);
+            
+            Assert.True(peer1.Statistics.BytesSent == (ulong)dataToSend1.Length);
+            Assert.True(peer2.Statistics.BytesSent == (ulong)dataToSend2.Length);
+            Assert.True(peer1.Statistics.BytesReceived == (ulong)dataToSend2.Length);
+            Assert.True(peer2.Statistics.BytesReceived == (ulong)dataToSend1.Length);
         }
     }
 }
