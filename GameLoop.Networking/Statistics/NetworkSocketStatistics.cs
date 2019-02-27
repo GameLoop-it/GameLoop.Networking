@@ -4,10 +4,11 @@ namespace GameLoop.Networking.Statistics
     {
         public ulong BytesSent;
         public ulong BytesReceived;
+        public uint MalformedReceivedPayloads;
 
         public static NetworkSocketStatistics Create()
         {
-            return new NetworkSocketStatistics();
+            return default;
         }
     }
 }

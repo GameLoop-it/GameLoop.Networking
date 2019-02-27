@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Net;
 using GameLoop.Networking.Memory;
 using GameLoop.Networking.Sockets;
@@ -10,6 +9,7 @@ namespace GameLoop.Networking.Tests
 {
     public class NetworkSocketTest
     {
+        private const int ProtocolId = Int32.MaxValue;
         private readonly ITestOutputHelper _testOutputHelper;
 
         public NetworkSocketTest(ITestOutputHelper testOutputHelper)
@@ -22,8 +22,8 @@ namespace GameLoop.Networking.Tests
         {
             var memoryAllocator = new SimpleManagedAllocator();
             var memoryPool = new SimpleMemoryPool(memoryAllocator);
-            var peer1 = new NetworkSocket(memoryPool);
-            var peer2 = new NetworkSocket(memoryPool);
+            var peer1 = new NetworkSocket(memoryPool, ProtocolId);
+            var peer2 = new NetworkSocket(memoryPool, ProtocolId);
 
             var bindingAddress1 = new IPEndPoint(IPAddress.Any, 50000);
             var bindingAddress2 = new IPEndPoint(IPAddress.Any, 50001);
@@ -90,5 +90,7 @@ namespace GameLoop.Networking.Tests
             Assert.True(peer1.Statistics.BytesReceived == (ulong)dataToSend2.Length);
             Assert.True(peer2.Statistics.BytesReceived == (ulong)dataToSend1.Length);
         }
+        
+        // TODO: a test for received payloads > PacketMtu
     }
 }

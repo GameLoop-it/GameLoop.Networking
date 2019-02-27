@@ -4,7 +4,7 @@ namespace GameLoop.Networking.Sockets
 {
     public struct NetworkArrivedData
     {
-        public EndPoint EndPoint;
+        public IPEndPoint EndPoint;
         public byte[] Data;
     }
 }

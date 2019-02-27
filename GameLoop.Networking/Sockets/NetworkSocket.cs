@@ -2,21 +2,17 @@
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
+using GameLoop.Networking.Buffers;
 using GameLoop.Networking.Memory;
+using GameLoop.Networking.Settings;
 using GameLoop.Networking.Statistics;
 
 namespace GameLoop.Networking.Sockets
 {
     public sealed class NetworkSocket : INetworkSocket
     {
-        // Max Transmission Unit.
-        // MTU on Ethernet is 1500 bytes. 
-        // - IP Header: 20 bytes
-        // - UDP Header: 8 bytes
-        // So they are 28 bytes just for packet's header. Let's say 32 bytes.
-        // Our payload MTU is: 1500 - 32 = 1468 bytes.
-        private const int PacketMtu = 1500 - 32;
-        private const int ReceiverBufferSize = PacketMtu;
+        
+        private const int ReceiverBufferSize = NetworkSettings.PacketMtu;
 
         public NetworkSocketStatistics Statistics;
 
@@ -28,14 +24,16 @@ namespace GameLoop.Networking.Sockets
 
         private readonly IMemoryPool _memoryPool;
         private readonly byte[] _dataBuffer;
+        private readonly int _protocolId;
 
         private readonly ConcurrentQueue<NetworkArrivedData> _arrivedDataQueue;
         
-        public NetworkSocket(IMemoryPool pool)
+        public NetworkSocket(IMemoryPool pool, int protocolId)
         {
             _listenCallback = ListenCallback;
             _memoryPool = pool;
             _dataBuffer = pool.Rent(ReceiverBufferSize);
+            _protocolId = protocolId;
             _arrivedDataQueue = new ConcurrentQueue<NetworkArrivedData>();
             Statistics = NetworkSocketStatistics.Create();
         }
@@ -113,18 +111,40 @@ namespace GameLoop.Networking.Sockets
             }
             
             // If we are here but we received 0 bytes, the socket has been dropped.
+            if (receivedBytes == 0) return;
+            
             // Also, if we received more data than our PacketMtu, we drop the received data.
-            if (receivedBytes == 0 || receivedBytes > PacketMtu) return;
+            if (receivedBytes > NetworkSettings.PacketMtu)
+            {
+                Statistics.MalformedReceivedPayloads++;
+                Listen();
+                return;
+            }
+
+            var arrivedBytes = (byte[])result.AsyncState;
+            
+            // Check if the arrived protocol is the same
+            var reader = default(NetworkReader);
+            reader.Initialize(ref arrivedBytes);
+            var arrivedProtocol = reader.ReadInt();
+
+            // If not, drop the payload
+            if (arrivedProtocol != _protocolId)
+            {
+                Statistics.MalformedReceivedPayloads++;
+                Listen();
+                return;
+            }
             
             // Copy received data in a local buffer.
-            var buffer = _memoryPool.Rent(receivedBytes);
-            Buffer.BlockCopy((byte[])result.AsyncState, 0, buffer, 0, receivedBytes);
+            var buffer = _memoryPool.Rent(receivedBytes - sizeof(int));
+            Buffer.BlockCopy(arrivedBytes, sizeof(int), buffer, 0, receivedBytes - sizeof(int));
             
             // Start listening again, while we handle the current received data.
             Listen();
 
             Statistics.BytesReceived += (ulong)receivedBytes;
-            _arrivedDataQueue.Enqueue(new NetworkArrivedData() { EndPoint = remoteEndpoint, Data = buffer });
+            _arrivedDataQueue.Enqueue(new NetworkArrivedData() { EndPoint = (IPEndPoint)remoteEndpoint, Data = buffer });
         }
 
         public void Close()
@@ -141,6 +161,11 @@ namespace GameLoop.Networking.Sockets
         public bool Poll(out NetworkArrivedData data)
         {
             return _arrivedDataQueue.TryDequeue(out data);
+        }
+
+        public bool HasAvailableData()
+        {
+            return !_arrivedDataQueue.IsEmpty;
         }
     }
 }
