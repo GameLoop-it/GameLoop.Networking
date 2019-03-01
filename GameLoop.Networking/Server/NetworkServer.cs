@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
 using System.Threading;
@@ -10,7 +11,7 @@ using GameLoop.Networking.Sockets;
 
 namespace GameLoop.Networking.Server
 {
-    public class NetworkServer
+    public sealed class NetworkServer
     {
         public NetworkServerState State => _state;
         
@@ -20,37 +21,39 @@ namespace GameLoop.Networking.Server
         private sbyte _ticksPerSecond;
         private double _tickTime;
         private NetworkServerState _state;
-        private NetworkRunningState _receivingRunningState;
+        private NetworkRunningState _sendingRunningState;
+        private readonly ManualResetEventSlim _closingWaitHandle;
 
-        private readonly Action _handleArrivedDataDelegate;
+        private readonly NetworkConnectionCollection _connections;
 
         private readonly Action _onNewConnection;
         private readonly Action _onDataArrived;
         private readonly Action _onDisconnection;
         
-        public NetworkServer()
+        public NetworkServer(int expectedConcurrentPlayers)
         {
             var memoryAllocator = new SimpleManagedAllocator();
             _memoryPool = new SimpleMemoryPool(memoryAllocator);
-            _receivingRunningState = NetworkRunningState.NotRunning;
-            _handleArrivedDataDelegate = HandleArrivedData;
+            _sendingRunningState = NetworkRunningState.NotRunning;
             _state = NetworkServerState.Initialized;
+            _closingWaitHandle = new ManualResetEventSlim();
+            _connections = new NetworkConnectionCollection(expectedConcurrentPlayers);
         }
 
         public void Start(int port, int protocolId, sbyte ticksPerSecond = 30)
         {
-            _socket = new NetworkSocket(_memoryPool, protocolId);
+            _socket = new NetworkSocket(_memoryPool, protocolId, HandleArrivedData);
             _socket.Bind(new IPEndPoint(IPAddress.Any, port));
 
             _ticksPerSecond = ticksPerSecond;
             _tickTime = 1000f / ticksPerSecond;
-            _receivingRunningState = NetworkRunningState.Running;
+            _sendingRunningState = NetworkRunningState.Running;
             
-            StartNetworkThread();
-            _state = NetworkServerState.Listening;
+            StartNetworkSendingThread();
+            _state = NetworkServerState.Running;
         }
-
-        private void StartNetworkThread()
+        
+        private void StartNetworkSendingThread()
         {
             Task.Factory.StartNew(() =>
             {
@@ -60,17 +63,16 @@ namespace GameLoop.Networking.Server
                 while (!_quitRequested)
                 {
                     timer.Start();
-                    while (_socket.HasAvailableData())
-                    {
-                        Task.Run(_handleArrivedDataDelegate);
-                    }
+                    
+                    // TODO: do stuff
+                    
                     timer.Stop();
 
                     double elapsed = timer.Elapsed.TotalMilliseconds - current;
 
                     if (elapsed < _tickTime)
                     {
-                        _receivingRunningState = NetworkRunningState.Running;
+                        _sendingRunningState = NetworkRunningState.Running;
                         Thread.Sleep((int)elapsed);
                     }
                     else
@@ -81,37 +83,72 @@ namespace GameLoop.Networking.Server
                         // We can think about a strategy to 
                         // cut down the tick rate until it can
                         // keep up.
-                        _receivingRunningState = NetworkRunningState.Overloaded;
+                        _sendingRunningState = NetworkRunningState.Overloaded;
                     }
                 }
-                
-                DisconnectAll();
-                
-                _socket.Close();
-                _state = NetworkServerState.Closed;
+
+                _closingWaitHandle.Set();
             }, TaskCreationOptions.LongRunning);
         }
 
         public void Close()
         {
+            _socket.StopAcceptingData();
+            DisconnectAll();
+            
             _quitRequested = true;
-            _receivingRunningState = NetworkRunningState.NotRunning;
+            _closingWaitHandle.Wait();
+            
+            _socket.Close();
+            _state = NetworkServerState.Closed;
+            _sendingRunningState = NetworkRunningState.NotRunning;
         }
 
-        private void HandleArrivedData()
+        private void HandleArrivedData(NetworkArrivedData data)
         {
-            if (_socket.Poll(out NetworkArrivedData data))
+            var address = data.EndPoint;
+            var packet = data.Data;
+
+            var reader = default(NetworkReader);
+            reader.Initialize(ref packet);
+
+            // Read how many messages arrived in this packet.
+            byte messagesAmount = reader.ReadByte();
+
+            for (byte i = 0; i < messagesAmount; i++)
             {
-                var address = data.EndPoint;
-                var packet = data.Data;
-
-                var reader = default(NetworkReader);
-                reader.Initialize(ref packet);
-
                 var header = NetworkHeader.ReadHeader(ref reader);
-                
-                
+
+                if (header.IsData)
+                {
+                    if (_connections.GetConnection(address, out var connection))
+                    {
+                        
+                    }
+                }
+                else if (header.IsConnection)
+                {
+                    var connection = _connections.AddConnection(address);
+                    TriggerConnection(connection);
+                }
+                else if (header.IsDisconnection)
+                {
+                    _connections.GetConnection(address, out var connection); 
+                    _connections.RemoveConnection(connection);
+                    TriggerDisconnection(connection);
+                    break;
+                }
             }
+        }
+
+        private void TriggerConnection(NetworkConnection connection)
+        {
+            _onNewConnection?.Invoke();
+        }
+
+        private void TriggerDisconnection(NetworkConnection connection)
+        {
+            _onDisconnection?.Invoke();
         }
         
         private void DisconnectAll()

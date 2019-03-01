@@ -10,7 +10,7 @@ using GameLoop.Networking.Sockets;
 
 namespace GameLoop.Networking.Client
 {
-    public class NetworkClient
+    public sealed class NetworkClient
     {
         public NetworkClientState State => _state;
         

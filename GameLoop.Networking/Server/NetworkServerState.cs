@@ -3,7 +3,7 @@ namespace GameLoop.Networking.Server
     public enum NetworkServerState
     {
         Initialized,
-        Listening,
+        Running,
         Closed
     }
 }
