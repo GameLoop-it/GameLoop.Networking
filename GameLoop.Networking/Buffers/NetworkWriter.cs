@@ -7,7 +7,7 @@ namespace GameLoop.Networking.Buffers
 {
     public struct NetworkWriter : IDisposable
     {
-        private const float GrowingFactor = 1.5f;
+        private const float GrowingFactor = 2f;
         
         private byte[] _buffer;
         private bool _isBufferInternallyManaged;
@@ -33,7 +33,9 @@ namespace GameLoop.Networking.Buffers
         /// </summary>
         public void Initialize(ref byte[] buffer)
         {
+            if(buffer.Length <= 0) throw new Exception("Buffer length is not valid");
             _buffer = buffer;
+            _currentByte = _buffer[_bytePointer];
             _isBufferInternallyManaged = false;
         }
         
@@ -81,12 +83,12 @@ namespace GameLoop.Networking.Buffers
         private void EnsureBufferSpace(int additionalSpaceInBits)
         {
             var length = _buffer.Length;
-            if (_bitsPointer + additionalSpaceInBits > length << 3)
+            if ((_bytePointer << 3) + _bitsPointer + additionalSpaceInBits > length << 3)
             {
                 if(!_isBufferInternallyManaged)
                     throw new Exception("The buffer is not managed by this writer and cannot be resized.");
                 var tmpBuffer = _buffer;
-                var newBuffer = _pool.Rent((int)(length * GrowingFactor) + 1);
+                var newBuffer = _pool.Rent((int)(length * GrowingFactor) + (additionalSpaceInBits >> 8) + 1);
                 System.Buffer.BlockCopy(tmpBuffer, 0, newBuffer, 0, tmpBuffer.Length);
                 _pool.Release(_buffer);
                 _buffer = newBuffer;
@@ -180,6 +182,7 @@ namespace GameLoop.Networking.Buffers
             {
                 System.Buffer.BlockCopy(value, 0, _buffer, _bytePointer, value.Length);
                 _bytePointer += value.Length;
+                _currentByte = _buffer[_bytePointer];
                 return;
             }
 
@@ -361,7 +364,7 @@ namespace GameLoop.Networking.Buffers
         /// <param name="value">The value to write.</param>
         public void Write(string value)
         {
-            EnsureBufferSpace(sizeof(char) * 8 * value.Length);
+            EnsureBufferSpace(sizeof(char) * 8 * (value.Length + 1));
 
             WriteBits((byte)value.Length, 8);
             Write(Encoding.UTF8.GetBytes(value));

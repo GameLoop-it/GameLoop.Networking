@@ -18,7 +18,9 @@ namespace GameLoop.Networking.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Initialize(ref byte[] buffer)
         {
+        	if(buffer.Length <= 0) throw new Exception("Buffer length is not valid");
             _buffer = buffer;
+            _currentByte = _buffer[_bytePointer];
         }
 
         public byte[] GetBuffer()
@@ -31,8 +33,8 @@ namespace GameLoop.Networking.Buffers
         {
             if (_bitsPointer == 0 && bitsAmount == 8)
             {
-                _bytePointer += 1;
                 var tmp = _currentByte;
+                _bytePointer += 1;
                 _currentByte = _buffer[_bytePointer];
                 return tmp;
             }

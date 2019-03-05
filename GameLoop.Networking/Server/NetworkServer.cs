@@ -49,7 +49,7 @@ namespace GameLoop.Networking.Server
             _tickTime = 1000f / ticksPerSecond;
             _sendingRunningState = NetworkRunningState.Running;
             
-            StartNetworkSendingThread();
+            //StartNetworkSendingThread();
             _state = NetworkServerState.Running;
         }
         
@@ -102,6 +102,11 @@ namespace GameLoop.Networking.Server
             _socket.Close();
             _state = NetworkServerState.Closed;
             _sendingRunningState = NetworkRunningState.NotRunning;
+        }
+
+        public void Send(ref NetworkMessage message)
+        {
+            
         }
 
         private void HandleArrivedData(NetworkArrivedData data)
