@@ -7,7 +7,7 @@ namespace GameLoop.Networking.Buffers
 {
     public struct NetworkWriter : IDisposable
     {
-        private const float GrowingFactor = 2f;
+        private const int GrowingFactor = 2;
         
         private byte[] _buffer;
         private bool _isBufferInternallyManaged;
@@ -42,16 +42,12 @@ namespace GameLoop.Networking.Buffers
         /// <summary>
         /// Initializes the writer and sets the internal buffer for writing.
         /// </summary>
-        public void Initialize(IMemoryPool pool, ref byte[] buffer, bool createCopy)
+        public void Initialize(IMemoryPool pool, ref byte[] buffer)
         {
-            if(!createCopy) Initialize(ref buffer);
-            else
-            {
-                _pool = pool;
-                var newBuffer = pool.Rent(buffer.Length);
-                Buffer.BlockCopy(buffer, 0, newBuffer, 0, buffer.Length);
-                _buffer = newBuffer;
-            }
+            _pool = pool;
+            var newBuffer = pool.Rent(buffer.Length);
+            Buffer.BlockCopy(buffer, 0, newBuffer, 0, buffer.Length);
+            _buffer = newBuffer;
         }
         
         /// <summary>

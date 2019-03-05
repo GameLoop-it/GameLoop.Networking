@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 namespace GameLoop.Networking.Buffers
 {
     [StructLayout(LayoutKind.Explicit)]
-    internal struct ByteConverter
+    internal ref struct ByteConverter
     {
         [FieldOffset(0)]
         public float Float;
