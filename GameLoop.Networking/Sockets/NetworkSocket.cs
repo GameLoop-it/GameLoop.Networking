@@ -142,5 +142,10 @@ namespace GameLoop.Networking.Sockets
         {
             return _arrivedDataQueue.TryDequeue(out data);
         }
+        
+        public bool HasAvailableData()
+        {
+            return !_arrivedDataQueue.IsEmpty;
+        }
     }
 }
