@@ -37,3 +37,49 @@ The library contains a trivial allocator and a trivial pool you can use to proto
 var memoryAllocator = new SimpleManagedAllocator();
 var memoryPool = new SimpleMemoryPool(memoryAllocator);
 ```
+
+## Working with buffers
+
+The library includes some convenient structures to work with buffers, to help the user to write/read to/from them.
+
+```csharp
+// Reading from a buffer.
+byte[] buffer = message.Data;
+
+var reader = default(NetworkReader);
+reader.Initialize(ref buffer);
+
+int myInt = reader.ReadInt();
+long myLong = reader.ReadLong();
+float myFloat = reader.ReadFloat();
+string myString = reader.ReadString();
+// etc
+```
+
+```csharp
+// Writing to a buffer.
+var writer = default(NetworkWriter);
+
+// 1) You can manually manage the buffer:
+/* 1) */ byte[] buffer = memoryPool.Rent(size);
+/* 1) */ writer.Initialize(ref buffer);
+// NOTE: in this way the writer will NOT expand the buffer if a Write call requires more space.
+
+// OR
+
+// 2) You can let the writer to manage internally the buffer:
+/* 2) */ writer.Initialize(memoryPool, initialSize);
+// NOTE: this will automatically expand the buffer if a Write call requires more space.
+
+// OR
+
+// 3) You can pass a buffer to copy its initial state, but let the writer to manage its own buffer internally:
+/* 3) */ byte[] initialState = memoryPool.Rent(size);
+/* 3) */ writer.Initialize(memoryPool, ref initialState);
+// NOTE: this will automatically expand the buffer if a Write call requires more space.
+
+writer.Write(12);
+writer.Write(24f);
+writer.Write("36");
+// etc
+```
