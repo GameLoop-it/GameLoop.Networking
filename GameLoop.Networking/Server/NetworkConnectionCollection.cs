@@ -44,12 +44,29 @@ namespace GameLoop.Networking.Server
             ReleaseUniqueId(connection);
         }
 
+        public NetworkConnection[] GetConnections()
+        {
+            return _connections;
+        }
+
         public bool GetConnection(IPEndPoint endpoint, out NetworkConnection connection)
         {
             if(_connectionsMap.ContainsKey(endpoint))
             {
                 connection = _connectionsMap[endpoint];
                 return true;
+            }
+
+            connection = null;
+            return false;
+        }
+        
+        public bool GetConnection(int connectionId, out NetworkConnection connection)
+        {
+            if(connectionId < _connections.Length)
+            {
+                connection = _connections[connectionId];
+                return connection != null;
             }
 
             connection = null;

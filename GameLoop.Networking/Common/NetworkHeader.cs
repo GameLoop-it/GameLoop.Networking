@@ -4,13 +4,14 @@ namespace GameLoop.Networking.Common
 {
     public struct NetworkHeader
     {
-        public const int HeaderSize = 2;
+        public const int HeaderSize = 4;
         
         public bool IsData;
         public bool IsConnection;
         public bool IsDisconnection;
         public bool IsCompressed;
         public bool IsEncrypted;
+        public ushort Tag;
         public ushort Length;
 
         public static NetworkHeader ReadHeader(ref NetworkReader reader)
@@ -22,6 +23,7 @@ namespace GameLoop.Networking.Common
             header.IsDisconnection = reader.ReadBool();
             header.IsCompressed = reader.ReadBool();
             header.IsEncrypted = reader.ReadBool();
+            header.Tag = reader.ReadUShort();
             header.Length = reader.ReadUShort(11);
 
             return header;
@@ -34,6 +36,7 @@ namespace GameLoop.Networking.Common
             writer.Write(header.IsDisconnection);
             writer.Write(header.IsCompressed);
             writer.Write(header.IsEncrypted);
+            writer.Write(header.Tag);
             writer.Write(header.Length, 11);
         }
     }

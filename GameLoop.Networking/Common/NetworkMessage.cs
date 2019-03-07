@@ -16,6 +16,7 @@ namespace GameLoop.Networking.Common
             header.IsDisconnection = false;
             header.IsCompressed = false;
             header.IsEncrypted = false;
+            header.Tag = 0;
             header.Length = 0;
 
             var writer = default(NetworkWriter);
@@ -37,6 +38,7 @@ namespace GameLoop.Networking.Common
             header.IsDisconnection = true;
             header.IsCompressed = false;
             header.IsEncrypted = false;
+            header.Tag = 0;
             header.Length = 0;
 
             var writer = default(NetworkWriter);
@@ -50,7 +52,7 @@ namespace GameLoop.Networking.Common
             return message;
         }
         
-        public static NetworkMessage CreateDataMessage(IMemoryPool pool, int payloadSize)
+        public static NetworkMessage CreateDataMessage(IMemoryPool pool, int payloadSize, ushort tag)
         {
             var header = default(NetworkHeader);
             header.IsConnection = false;
@@ -58,6 +60,7 @@ namespace GameLoop.Networking.Common
             header.IsDisconnection = false;
             header.IsCompressed = false;
             header.IsEncrypted = false;
+            header.Tag = tag;
             header.Length = (ushort)payloadSize;
 
             var writer = default(NetworkWriter);

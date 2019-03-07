@@ -101,6 +101,28 @@ namespace GameLoop.Networking.Buffers
             }
             return bytes;
         }
+        
+        /// <summary>
+        /// Reads a byte array from the buffer and puts it in the destination buffer passed.
+        /// </summary>
+        /// <param name="length">The number of bytes to read.</param>
+        /// <param name="destination">The destination buffer.</param>
+        public void ReadBytes(int length, ref byte[] destination)
+        {
+            if(destination.Length < length) 
+                throw new ArgumentException("Destination buffer is not large enough to contain the result of this read operation.", nameof(destination));
+            
+            if (_bitsPointer == 0)
+            {
+                System.Buffer.BlockCopy(_buffer, _bytePointer, destination, 0, length);
+                return;
+            }
+
+            for (int index = 0; index < length; index++)
+            {
+                destination[index] = ReadBits(8);
+            }
+        }
 
         /// <summary>
         /// Reads a bool from the buffer.
