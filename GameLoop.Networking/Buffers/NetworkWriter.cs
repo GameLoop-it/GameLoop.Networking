@@ -84,7 +84,7 @@ namespace GameLoop.Networking.Buffers
                 if(!_isBufferInternallyManaged)
                     throw new Exception("The buffer is not managed by this writer and cannot be resized.");
                 var tmpBuffer = _buffer;
-                var newBuffer = _pool.Rent((int)(length * GrowingFactor) + (additionalSpaceInBits >> 8) + 1);
+                var newBuffer = _pool.Rent((length + (additionalSpaceInBits >> 8) + 1) * GrowingFactor);
                 System.Buffer.BlockCopy(tmpBuffer, 0, newBuffer, 0, tmpBuffer.Length);
                 _pool.Release(_buffer);
                 _buffer = newBuffer;
