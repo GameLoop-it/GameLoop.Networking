@@ -10,12 +10,9 @@ namespace GameLoop.Networking.Sockets
     public sealed class NetworkSocket : INetworkSocket
     {
         // Max Transmission Unit.
-        // MTU on Ethernet is 1500 bytes. 
-        // - IP Header: 20 bytes
-        // - UDP Header: 8 bytes
-        // So they are 28 bytes just for packet's header. Let's say 32 bytes.
-        // Our payload MTU is: 1500 - 32 = 1468 bytes.
-        private const int PacketMtu = 1500 - 32;
+        // Minimum MTU amount that an host can set is 576 bytes.
+        // We are sure that this amount will not be fragmented on any device.
+        private const int PacketMtu = 500;
         private const int ReceiverBufferSize = PacketMtu;
 
         public NetworkSocketStatistics Statistics;
