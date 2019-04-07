@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -31,11 +32,15 @@ namespace GameLoop.Networking.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private byte ReadBits(int bitsAmount)
         {
+            Debug.Assert(_bytePointer < _buffer.Length);
             if (_bitsPointer == 0 && bitsAmount == 8)
             {
                 var tmp = _currentByte;
-                _bytePointer += 1;
-                _currentByte = _buffer[_bytePointer];
+                if (_bytePointer < _buffer.Length - 1)
+                {
+                    _bytePointer += 1;
+                    _currentByte = _buffer[_bytePointer];
+                }
                 return tmp;
             }
 
