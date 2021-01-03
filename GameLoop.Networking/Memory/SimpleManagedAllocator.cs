@@ -5,9 +5,9 @@ namespace GameLoop.Networking.Memory
     public sealed class SimpleManagedAllocator : IMemoryAllocator
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public byte[] Allocate(int size)
+        public T[] Allocate<T>(int size)
         {
-            return new byte[size];
+            return new T[size];
         }
     }
 }

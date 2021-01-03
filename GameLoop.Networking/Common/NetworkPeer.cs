@@ -47,7 +47,7 @@ namespace GameLoop.Networking.Common
         public void Start(int port, int protocolId, sbyte ticksPerSecond = 30)
         {
             _awaitedTasks = new Task[_concurrentMessageHandlers.Count];
-            _socket = new NetworkSocket(_memoryPool, protocolId, HandleArrivedData);
+            _socket = new NetworkSocket(_memoryPool, protocolId);
             _socket.Bind(new IPEndPoint(IPAddress.Any, port));
 
             _ticksPerSecond = ticksPerSecond;

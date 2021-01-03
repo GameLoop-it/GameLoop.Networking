@@ -50,7 +50,7 @@ namespace GameLoop.Networking.Client
         private void SendConnectProtocol()
         {
             var writer = NetworkMessage.CreateConnectionMessage(_memoryPool);
-            Send(ref writer);
+            //Send(ref writer);
         }
         
         public void Send(ref NetworkWriter writer)

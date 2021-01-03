@@ -30,15 +30,15 @@ namespace GameLoop.Networking.Sockets
 
         private bool _canAcceptData = true;
 
-        private readonly Action<NetworkArrivedData> _onArrivedData;
+        private readonly ConcurrentQueue<NetworkArrivedData> _arrivedDataQueue;
         
-        public NetworkSocket(IMemoryPool pool, int protocolId, Action<NetworkArrivedData> arrivedDataCallback)
+        public NetworkSocket(IMemoryPool pool, int protocolId)
         {
             _listenCallback = ListenCallback;
             _memoryPool = pool;
             _dataBuffer = pool.Rent(ReceiverBufferSize);
             _protocolId = protocolId;
-            _onArrivedData = arrivedDataCallback;
+            _arrivedDataQueue = new ConcurrentQueue<NetworkArrivedData>();
             Statistics = NetworkSocketStatistics.Create();
         }
 
@@ -46,12 +46,13 @@ namespace GameLoop.Networking.Sockets
         {
             InitializeSocket(endpoint.AddressFamily);
             _socket.Bind(endpoint);
+            NetworkSocketUtils.SetConnectionReset(_socket);
             _listeningEndPoint = endpoint;
             _readingEndPoint = new IPEndPoint((_listeningEndPoint.AddressFamily == AddressFamily.InterNetworkV6) ? IPAddress.IPv6Any : IPAddress.Any, 0);
             
             Listen();
         }
-        
+
         private void InitializeSocket(AddressFamily addressFamily)
         {
             switch (addressFamily)
@@ -150,7 +151,7 @@ namespace GameLoop.Networking.Sockets
 
             Statistics.BytesReceived += (ulong)receivedBytes;
             
-            Task.Run(() => { _onArrivedData.Invoke(new NetworkArrivedData() { EndPoint = (IPEndPoint)remoteEndpoint, Data = buffer }); });
+            _arrivedDataQueue.Enqueue(new NetworkArrivedData() { EndPoint = (IPEndPoint)remoteEndpoint, Data = buffer });
         }
 
         public void StopAcceptingData()
@@ -168,7 +169,7 @@ namespace GameLoop.Networking.Sockets
             _socket.BeginSendTo(data, 0, data.Length, SocketFlags.None, endPoint, null, null);
             Statistics.BytesSent += (ulong)data.Length;
         }
-/*
+
         public bool Poll(out NetworkArrivedData data)
         {
             return _arrivedDataQueue.TryDequeue(out data);
@@ -178,11 +179,5 @@ namespace GameLoop.Networking.Sockets
         {
             return !_arrivedDataQueue.IsEmpty;
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WaitForAvailableData()
-        {
-            _receiveWaitHandle.WaitOne();
-        }*/
     }
 }

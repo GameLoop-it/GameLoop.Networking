@@ -2,7 +2,7 @@ namespace GameLoop.Networking.Memory
 {
     public interface IMemoryPool
     {
-        byte[] Rent(int minimumSize);
-        void Release(byte[] chunk);
+        T[] Rent<T>(int minimumSize);
+        void Release<T>(T[] chunk);
     }
 }

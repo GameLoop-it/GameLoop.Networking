@@ -101,6 +101,29 @@ namespace GameLoop.Networking.Tests
         }
         
         [Fact]
+        public void WriteAndReadNegativeLongWithLessBits()
+        {
+            long v = long.MinValue >> 10;
+            ulong zigzag = (ulong)((v >> 53) ^ (v << 1));
+            InitializeTest(out var reader, out var writer, 8);
+            
+            writer.Write(zigzag, 54);
+
+            var buffer = writer.GetBuffer();
+            reader.Initialize(ref buffer);
+
+            var read = reader.ReadULong(54);
+            var zagzig = ((long)(read >> 1) ^ (-(long)(read & 1)));
+            
+            _testOutputHelper.WriteLine("V: " + v);
+            _testOutputHelper.WriteLine("Zigzag: " + zigzag);
+            _testOutputHelper.WriteLine("Read: " + read);
+            _testOutputHelper.WriteLine("Zagzig: " + zagzig);
+            
+            Assert.True(zagzig == v);
+        }
+        
+        [Fact]
         public void WriteAndReadFloat()
         {
             float v = 63.721f;

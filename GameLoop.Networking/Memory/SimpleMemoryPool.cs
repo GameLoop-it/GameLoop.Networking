@@ -12,13 +12,13 @@ namespace GameLoop.Networking.Memory
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public byte[] Rent(int minimumSize)
+        public T[] Rent<T>(int minimumSize)
         {
-            return _allocator.Allocate(minimumSize);
+            return _allocator.Allocate<T>(minimumSize);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Release(byte[] chunk)
+        public void Release<T>(T[] chunk)
         {
             // This simple pool does not care of releasing your shit. ;)
         }
