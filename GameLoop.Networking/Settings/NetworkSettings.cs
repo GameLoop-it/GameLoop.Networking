@@ -1,13 +1,16 @@
 namespace GameLoop.Networking.Settings
 {
-    public static class NetworkSettings
+    public class NetworkSettings
     {
         // Max Transmission Unit.
-        // MTU on Ethernet is 1500 bytes. 
-        // - IP Header: 20 bytes
-        // - UDP Header: 8 bytes
-        // So they are 28 bytes just for packet's header. Let's say 32 bytes.
-        // Our payload MTU is: 1500 - 32 = 1468 bytes.
-        public const int PacketMtu = 1500 - 32;
+        // Rationale:
+        // The minimum MTU size that an host can set is 576 bytes (for IPv4) and 1280 bytes (for IPv6).
+        // We are sure that these amounts will not be fragmented on any device.
+        // For modern devices (IPv6-enabled) 1280 bytes is a reasonably safe MTU.
+        // At this amount we subtract the UDP + IP header: 1280 - (8 + 20).
+        // Find more at:
+        // https://en.wikipedia.org/wiki/Maximum_transmission_unit
+        // https://en.wikipedia.org/wiki/User_Datagram_Protocol
+        public const int PacketMtu = 1280 - (8 + 20);
     }
 }
