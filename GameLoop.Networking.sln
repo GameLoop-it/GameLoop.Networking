@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameLoop.Networking", "Game
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameLoop.Networking.Tests", "GameLoop.Networking.Tests\GameLoop.Networking.Tests.csproj", "{D3C0AB19-8035-4B79-B2B0-4D0C89B6D643}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameLoop.Utilities", "GameLoop.Utilities\GameLoop.Utilities.csproj", "{87C4A17B-C590-4784-A284-DCF26B356C97}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{D3C0AB19-8035-4B79-B2B0-4D0C89B6D643}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D3C0AB19-8035-4B79-B2B0-4D0C89B6D643}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D3C0AB19-8035-4B79-B2B0-4D0C89B6D643}.Release|Any CPU.Build.0 = Release|Any CPU
+		{87C4A17B-C590-4784-A284-DCF26B356C97}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{87C4A17B-C590-4784-A284-DCF26B356C97}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{87C4A17B-C590-4784-A284-DCF26B356C97}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{87C4A17B-C590-4784-A284-DCF26B356C97}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
