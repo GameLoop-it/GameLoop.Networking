@@ -1,164 +1,96 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Threading.Tasks;
-using GameLoop.Networking.Buffers;
-using GameLoop.Networking.Memory;
 using GameLoop.Networking.Settings;
-using GameLoop.Networking.Statistics;
+using GameLoop.Utilities.Logs;
 
 namespace GameLoop.Networking.Sockets
 {
-    public sealed class NetworkSocket
+    public sealed class NetworkSocket : INetworkSocket
     {
         private const int ReceiverBufferSize = NetworkSettings.PacketMtu;
 
-        public NetworkSocketStatistics Statistics;
-
-        private Socket _socket;
+        private Socket   _socket;
         private EndPoint _listeningEndPoint;
-        private EndPoint _readingEndPoint;
-        
-        private readonly AsyncCallback _listenCallback;
+        private EndPoint _receivingFromEndPoint;
+        private byte[]   _receiveBuffer;
 
-        private readonly IMemoryPool _memoryPool;
-        private readonly byte[] _dataBuffer;
-        private readonly int _protocolId;
-
-        private bool _canAcceptData = true;
-
-        private readonly ConcurrentQueue<NetworkArrivedData> _arrivedDataQueue;
-        
-        public NetworkSocket(IMemoryPool pool, int protocolId)
+        public NetworkSocket()
         {
-            _listenCallback = ListenCallback;
-            _memoryPool = pool;
-            _dataBuffer = pool.Rent(ReceiverBufferSize);
-            _protocolId = protocolId;
-            _arrivedDataQueue = new ConcurrentQueue<NetworkArrivedData>();
-            Statistics = NetworkSocketStatistics.Create();
+            _receiveBuffer = new byte[ReceiverBufferSize];
         }
 
         public void Bind(IPEndPoint endpoint)
         {
-            InitializeSocket(endpoint.AddressFamily);
+            _socket = InitializeSocket(endpoint.AddressFamily);
             _socket.Bind(endpoint);
             NetworkSocketUtils.SetConnectionReset(_socket);
+
             _listeningEndPoint = endpoint;
-            _readingEndPoint = new IPEndPoint((_listeningEndPoint.AddressFamily == AddressFamily.InterNetworkV6) ? IPAddress.IPv6Any : IPAddress.Any, 0);
-            
-            Listen();
+            _receivingFromEndPoint = new IPEndPoint(
+                (_listeningEndPoint.AddressFamily == AddressFamily.InterNetworkV6)
+                    ? IPAddress.IPv6Any
+                    : IPAddress.Any,
+                0);
         }
 
-        private void InitializeSocket(AddressFamily addressFamily)
+        private static Socket InitializeSocket(AddressFamily addressFamily)
         {
+            Socket socket;
+
             switch (addressFamily)
             {
                 case AddressFamily.InterNetwork:
-                    _socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                    socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
                     break;
                 case AddressFamily.InterNetworkV6:
                     if (!Socket.OSSupportsIPv6) throw new Exception("IPv6 is not supported on this OS.");
-                    _socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
-                    _socket.SetSocketOption(SocketOptionLevel.IPv6, (SocketOptionName)27, false);
+                    socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
+                    socket.SetSocketOption(SocketOptionLevel.IPv6, (SocketOptionName) 27, false);
                     break;
                 default:
                     throw new Exception("The address family isn't supported.");
             }
-            _socket.Blocking = false;
-            _socket.DontFragment = true;
-            _socket.ReceiveBufferSize = ReceiverBufferSize;
-            _socket.SendBufferSize = ReceiverBufferSize;
+
+            socket.Blocking          = false;
+            socket.DontFragment      = true;
+            socket.ReceiveBufferSize = ReceiverBufferSize;
+            socket.SendBufferSize    = ReceiverBufferSize;
+
+            return socket;
         }
 
-        private void Listen()
+        public bool Receive(out IPEndPoint endPoint, out byte[] buffer, out int receivedBytes)
         {
-            if (!_canAcceptData) return;
-            try
+            endPoint = null;
+            buffer   = null;
+
+            if (_socket.Poll(0, SelectMode.SelectRead) == false)
             {
-                _socket.BeginReceiveFrom(_dataBuffer, 0, ReceiverBufferSize, SocketFlags.None, ref _listeningEndPoint, _listenCallback, _dataBuffer);
+                receivedBytes = 0;
+                return false;
             }
-            catch (ObjectDisposedException)
+
+            receivedBytes = _socket.ReceiveFrom(GetReceiveBuffer(), SocketFlags.None, ref _receivingFromEndPoint);
+
+            if (receivedBytes > 0)
             {
-                // The current socket has been disposed.
-                // Listening is not needed anymore.
+                Logger.DebugInfo($"Received {receivedBytes} bytes from {_receivingFromEndPoint}");
+                endPoint = (IPEndPoint) _receivingFromEndPoint;
+                buffer   = _receiveBuffer;
+                return true;
             }
-            catch (SocketException)
-            {
-                // Something failed with the current read.
-                // Restart the listening routine.
-                Listen();
-            }
+
+            return false;
         }
 
-        private void ListenCallback(IAsyncResult result)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private byte[] GetReceiveBuffer()
         {
-            int receivedBytes;
-            EndPoint remoteEndpoint = _readingEndPoint;
-            try
-            {
-                receivedBytes = _socket.EndReceiveFrom(result, ref remoteEndpoint);
-            }
-            catch (ObjectDisposedException)
-            {
-                // The current socket has been disposed.
-                // The listening is not needed anymore.
-                return;
-            }
-            catch (SocketException)
-            {
-                // Something failed with the current read.
-                // Restart the listening routine.
-                Listen();
-                return;
-            }
-            
-            // If we are here but we received 0 bytes, the socket has been dropped.
-            if (receivedBytes == 0) return;
-            
-            // Also, if we received more data than our PacketMtu, we drop the received data.
-            if (receivedBytes > NetworkSettings.PacketMtu)
-            {
-                Statistics.MalformedReceivedPayloads++;
-                Listen();
-                return;
-            }
-
-            var arrivedBytes = (byte[])result.AsyncState;
-            
-            // Check if the arrived protocol is the same
-            var reader = default(NetworkReader);
-            reader.Initialize(ref arrivedBytes);
-            var arrivedProtocol = reader.ReadInt();
-
-            // If not, drop the payload
-            if (arrivedProtocol != _protocolId)
-            {
-                Statistics.MalformedReceivedPayloads++;
-                Listen();
-                return;
-            }
-            
-            // Copy received data in a local buffer.
-            var buffer = _memoryPool.Rent(receivedBytes - sizeof(int));
-            Buffer.BlockCopy(arrivedBytes, sizeof(int), buffer, 0, receivedBytes - sizeof(int));
-            
-            // Start listening again, while we handle the current received data.
-            Listen();
-
-            Statistics.BytesReceived += (ulong)receivedBytes;
-            
-            _arrivedDataQueue.Enqueue(new NetworkArrivedData() { EndPoint = (IPEndPoint)remoteEndpoint, Data = buffer });
+            return _receiveBuffer;
         }
 
-        public void StopAcceptingData()
-        {
-            _canAcceptData = false;
-        }
-        
         public void Close()
         {
             _socket.Close(1);
@@ -166,18 +98,12 @@ namespace GameLoop.Networking.Sockets
 
         public void SendTo(IPEndPoint endPoint, byte[] data)
         {
-            _socket.BeginSendTo(data, 0, data.Length, SocketFlags.None, endPoint, null, null);
-            Statistics.BytesSent += (ulong)data.Length;
+            SendTo(endPoint, data, 0, data.Length);
         }
 
-        public bool Poll(out NetworkArrivedData data)
+        public void SendTo(IPEndPoint endPoint, byte[] data, int offset, int length)
         {
-            return _arrivedDataQueue.TryDequeue(out data);
-        }
-
-        public bool HasAvailableData()
-        {
-            return !_arrivedDataQueue.IsEmpty;
+            _socket.SendTo(data, offset, length, SocketFlags.None, endPoint);
         }
     }
 }

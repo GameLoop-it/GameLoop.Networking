@@ -1,3 +1,5 @@
+using System.Net;
+
 namespace GameLoop.Networking.Settings
 {
     public class NetworkSettings
@@ -12,5 +14,10 @@ namespace GameLoop.Networking.Settings
         // https://en.wikipedia.org/wiki/Maximum_transmission_unit
         // https://en.wikipedia.org/wiki/User_Datagram_Protocol
         public const int PacketMtu = 1280 - (8 + 20);
+
+        public IPEndPoint BindingEndpoint;
+        public int        MaxConnectionsAllowed     = 32;
+        public int        MaxConnectionsAttempts    = 10;
+        public double     ConnectionAttemptInterval = .25f;
     }
 }
