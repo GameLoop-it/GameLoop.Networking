@@ -22,11 +22,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-namespace GameLoop.Networking.Memory
+using System;
+
+namespace GameLoop.Networking.Buffers
 {
-    public interface IMemoryPool
+    public interface IMemoryPool : IDisposable
     {
-        T[] Rent<T>(int minimumSize);
-        void Release<T>(T[] chunk);
+        byte[] Allocate();
+        void   Free(byte[] block);
     }
 }

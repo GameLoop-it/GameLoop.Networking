@@ -27,7 +27,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
-using GameLoop.Networking.Memory;
 
 namespace GameLoop.Networking.Buffers
 {
@@ -53,7 +52,7 @@ namespace GameLoop.Networking.Buffers
             _position = 0;
             _bitsPointer = 0;
             int size = (sizeInByte >> 3) + ((sizeInByte % ChunkSizeInByte == 0) ? 0 : 1);
-            _bufferPointer = pool.Rent<ulong>(size);
+            //_bufferPointer = pool.Rent<ulong>(size);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -98,7 +97,7 @@ namespace GameLoop.Networking.Buffers
 
         public void Dispose()
         {
-            _memoryPool.Release(_bufferPointer);
+            //_memoryPool.Release(_bufferPointer);
         }
     }
 }

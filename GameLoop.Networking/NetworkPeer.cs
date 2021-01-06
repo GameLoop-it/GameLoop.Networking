@@ -21,7 +21,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
-
 using System.Collections.Generic;
 using System.Net;
 using GameLoop.Networking.Packets;
@@ -184,7 +183,14 @@ namespace GameLoop.Networking
         private void SendCommand(NetworkConnection connection, CommandType command)
         {
             Logger.DebugInfo($"Sending command {command} to {connection}");
-            Send(connection, new byte[2] {(byte) PacketType.Command, (byte) command});
+            
+            var buffer = _context.MemoryManager.Allocate(2);
+            buffer[0] = (byte) PacketType.Command;
+            buffer[1] = (byte) command;
+            
+            Send(connection, buffer);
+            
+            _context.MemoryManager.Free(buffer);
         }
 
         private NetworkConnection CreateConnection(IPEndPoint endpoint)
