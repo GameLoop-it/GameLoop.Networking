@@ -22,17 +22,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-namespace GameLoop.Networking.Statistics
+namespace GameLoop.Networking.Sockets
 {
-    public class NetworkSocketStatistics
+    public class NanoSocketFactory : INetworkSocketFactory
     {
-        public ulong BytesSent;
-        public ulong BytesReceived;
-        public uint  MalformedReceivedPayloads;
-
-        public static NetworkSocketStatistics Create()
+        public INetworkSocket Create()
         {
-            return new NetworkSocketStatistics();
+            return new NanoSocket();
         }
     }
 }

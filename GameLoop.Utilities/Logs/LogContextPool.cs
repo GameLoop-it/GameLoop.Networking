@@ -26,7 +26,7 @@ using System.Collections.Generic;
 
 namespace GameLoop.Utilities.Logs
 {
-    public class LogContextPool
+    internal class LogContextPool
     {
         private readonly Queue<LogContext> _infoContexts;
         private readonly Queue<LogContext> _warningContexts;

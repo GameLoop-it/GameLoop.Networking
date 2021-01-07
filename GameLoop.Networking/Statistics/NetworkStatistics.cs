@@ -1,7 +1,7 @@
 /*
 The MIT License (MIT)
 
-Copyright (c) 2020 Emanuele Manzione, Fredrik Holmstrom
+Copyright (c) 2020 Emanuele Manzione
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -21,23 +21,36 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
-
-namespace GameLoop.Networking.Packets
+namespace GameLoop.Networking.Statistics
 {
-    public enum CommandType : byte
+    public class NetworkStatistics
     {
-        // From client to server when connecting for the first time.
-        ConnectionRequest = 1,
-        
-        // From server to client when the connect request has been accepted.
-        ConnectionAccepted = 2,
-        
-        // From server to clients when the connection has been refused.
-        ConnectionRefused = 3,
-    }
+        public ulong BytesSent;
+        public ulong BytesReceived;
 
-    public enum ConnectionRefusedReason : byte
-    {
-        ServerFull = 1,
+        public static NetworkStatistics Create()
+        {
+            return new NetworkStatistics();
+        }
+
+        public void IncreaseBytesSent(int amount)
+        {
+            BytesSent += (ulong)amount;
+        }
+
+        public void IncreaseBytesSent(ulong amount)
+        {
+            BytesSent += amount;
+        }
+
+        public void IncreaseBytesReceived(int amount)
+        {
+            BytesReceived += (ulong)amount;
+        }
+
+        public void IncreaseBytesReceived(ulong amount)
+        {
+            BytesReceived += amount;
+        }
     }
 }

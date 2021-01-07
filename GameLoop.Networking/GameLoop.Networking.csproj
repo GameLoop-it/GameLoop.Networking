@@ -6,11 +6,29 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="System.Memory" Version="4.5.2" />
+        <PackageReference Include="System.Memory" Version="4.5.4" />
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\GameLoop.Utilities\GameLoop.Utilities.csproj" />
+        <ProjectReference Include="..\GameLoop.Utilities\GameLoop.Utilities.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Remove="nanosockets.dll" />
+        <Content Include="nanosockets.dll">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <None Remove="nanosockets.dylib" />
+        <Content Include="nanosockets.dylib">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <None Remove="libnanosockets.so" />
+        <Content Include="libnanosockets.so">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+    </ItemGroup>
+
+    <ItemGroup>
     </ItemGroup>
 
 </Project>

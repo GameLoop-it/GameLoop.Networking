@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 using System.Net;
+using GameLoop.Networking.Statistics;
 using GameLoop.Utilities.Asserts;
 using GameLoop.Utilities.Logs;
 
@@ -30,15 +31,21 @@ namespace GameLoop.Networking
     public class NetworkConnection
     {
         public IPEndPoint      RemoteEndpoint;
-        public ConnectionState ConnectionState;
+        public ConnectionState ConnectionState { get; private set; }
 
         public int    ConnectionAttempts;
         public double LastConnectionAttemptTime;
+
+        public double LastSendPacketTime; 
+        public double LastReceivedPacketTime;
+
+        public readonly NetworkStatistics Statistics;
 
         public NetworkConnection(IPEndPoint remoteEndpoint)
         {
             RemoteEndpoint  = remoteEndpoint;
             ConnectionState = ConnectionState.Created;
+            Statistics = NetworkStatistics.Create();
         }
 
         public void ChangeState(ConnectionState connectionState)
@@ -46,20 +53,21 @@ namespace GameLoop.Networking
             switch (connectionState)
             {
                 case ConnectionState.Connected:
-                    Assert.Check(ConnectionState == ConnectionState.Created || ConnectionState == ConnectionState.Connecting);
+                    Assert.Check(ConnectionState == ConnectionState.Created ||
+                                 ConnectionState == ConnectionState.Connecting);
                     break;
                 case ConnectionState.Connecting:
                     Assert.Check(ConnectionState == ConnectionState.Created);
                     break;
             }
-            
-            Logger.DebugInfo($"{RemoteEndpoint} changed state from {ConnectionState} to {connectionState}");
+
+            Logger.DebugInfo($"{this} changed state from {ConnectionState} to {connectionState}");
             ConnectionState = connectionState;
         }
 
         public override string ToString()
         {
-            return $"[Connection RemoteEndpoint={RemoteEndpoint}]";
+            return $"[Connection={RemoteEndpoint} Recv={Statistics.BytesReceived} Sent={Statistics.BytesSent}]";
         }
     }
 }

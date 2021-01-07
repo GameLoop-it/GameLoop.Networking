@@ -21,6 +21,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
+
+using System;
 using System.Collections.Generic;
 using System.Net;
 using GameLoop.Networking.Packets;
@@ -34,7 +36,7 @@ namespace GameLoop.Networking
 {
     public sealed class NetworkPeer
     {
-        public readonly NetworkSocketStatistics Statistics;
+        public Action<NetworkConnection> OnConnectionFailed;
 
         private          Timer          _timer;
         private readonly INetworkSocket _socket;
@@ -47,7 +49,6 @@ namespace GameLoop.Networking
             _context     = context;
             _socket      = _context.SocketFactory.Create();
             _connections = new Dictionary<IPEndPoint, NetworkConnection>();
-            Statistics   = NetworkSocketStatistics.Create();
         }
 
         public void Start()
@@ -60,12 +61,6 @@ namespace GameLoop.Networking
         {
             _socket.Close();
             _timer.Stop();
-        }
-
-        public void SendUnconnected(IPEndPoint endpoint, byte[] data)
-        {
-            _socket.SendTo(endpoint, data);
-            Statistics.BytesSent += (ulong) data.Length;
         }
 
         public void Update()
@@ -86,19 +81,25 @@ namespace GameLoop.Networking
 
                 if (_connections.TryGetValue(endpoint, out var connection))
                 {
-                    switch ((PacketType) packet.Data[0])
-                    {
-                        case PacketType.Command:
-                            HandleCommandPacket(connection, packet);
-                            break;
-                    }
+                    HandleConnectedPacket(connection, packet);
                 }
                 else
                 {
                     HandleUnconnectedPacket(endpoint, packet);
                 }
+            }
+        }
 
-                Statistics.BytesReceived += (ulong) receivedBytes;
+        private void HandleConnectedPacket(NetworkConnection connection, Packet packet)
+        {
+            connection.LastReceivedPacketTime = _timer.GetElapsedSeconds();
+            connection.Statistics.IncreaseBytesReceived(packet.Length);
+
+            switch ((PacketType) packet.Data[0])
+            {
+                case PacketType.Command:
+                    HandleCommandPacket(connection, packet);
+                    break;
             }
         }
 
@@ -114,11 +115,20 @@ namespace GameLoop.Networking
 
             if (_connections.Count >= _context.Settings.MaxConnectionsAllowed)
             {
-                // TODO: Send "connection refused, server is full" as reply.
+                var buffer = _context.MemoryManager.Allocate(3);
+                buffer[0] = (byte) PacketType.Command;
+                buffer[1] = (byte) CommandType.ConnectionRefused;
+                buffer[2] = (byte) ConnectionRefusedReason.ServerFull;
+                
+                SendUnconnected(endpoint, buffer, 0, 3);
+
+                _context.MemoryManager.Free(buffer);
+                
                 return;
             }
 
             var connection = CreateConnection(endpoint);
+            connection.Statistics.IncreaseBytesReceived(packet.Length);
 
             HandleCommandPacket(connection, packet);
         }
@@ -132,6 +142,12 @@ namespace GameLoop.Networking
                     break;
                 case CommandType.ConnectionAccepted:
                     HandleConnectionAcceptedCommand(connection, packet);
+                    break;
+                case CommandType.ConnectionRefused:
+                    HandleConnectionRefusedCommand(connection, packet);
+                    break;
+                default:
+                    Logger.Warning($"Unknown command {packet.Data[1]} received from {connection}");
                     break;
             }
         }
@@ -175,32 +191,76 @@ namespace GameLoop.Networking
             }
         }
 
+        private void HandleConnectionRefusedCommand(NetworkConnection connection, Packet packet)
+        {
+            switch (connection.ConnectionState)
+            {
+                case ConnectionState.Connecting:
+                    var reason = (ConnectionRefusedReason) packet.Data[2];
+                    Logger.DebugWarning($"Connection refused because: {reason}");
+
+                    RemoveConnection(connection);
+                    OnConnectionFailed?.Invoke(connection);
+
+                    break;
+                default:
+                    Assert.AlwaysFail();
+                    break;
+            }
+        }
+
+        public void SendUnconnected(IPEndPoint endpoint, byte[] data)
+        {
+            SendUnconnected(endpoint, data, 0, data.Length);
+        }
+        
+        public void SendUnconnected(IPEndPoint endpoint, byte[] data, int offset, int length)
+        {
+            _socket.SendTo(endpoint, data, offset, length);
+        }
+
         private void Send(NetworkConnection connection, byte[] data)
         {
-            _socket.SendTo(connection.RemoteEndpoint, data);
+            Send(connection, data, 0, data.Length);
+        }
+
+        private void Send(NetworkConnection connection, byte[] data, int offset, int length)
+        {
+            connection.LastSendPacketTime = _timer.GetElapsedSeconds();
+            _socket.SendTo(connection.RemoteEndpoint, data, offset, length);
+            connection.Statistics.IncreaseBytesSent(length);
         }
 
         private void SendCommand(NetworkConnection connection, CommandType command)
         {
             Logger.DebugInfo($"Sending command {command} to {connection}");
-            
+
             var buffer = _context.MemoryManager.Allocate(2);
             buffer[0] = (byte) PacketType.Command;
             buffer[1] = (byte) command;
-            
+
             Send(connection, buffer);
-            
+
             _context.MemoryManager.Free(buffer);
         }
 
         private NetworkConnection CreateConnection(IPEndPoint endpoint)
         {
             var connection = new NetworkConnection(endpoint);
+            connection.LastReceivedPacketTime = _timer.GetElapsedSeconds();
             _connections.Add(endpoint, connection);
 
             Logger.DebugInfo($"New connection from {connection}.");
 
             return connection;
+        }
+
+        private void RemoveConnection(NetworkConnection connection)
+        {
+            Assert.Check(connection.ConnectionState != ConnectionState.Removed);
+            var removed = _connections.Remove(connection.RemoteEndpoint);
+            connection.ChangeState(ConnectionState.Removed);
+            Assert.Check(removed);
         }
 
         public void Connect(IPEndPoint endpoint)

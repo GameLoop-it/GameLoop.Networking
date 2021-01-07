@@ -56,13 +56,13 @@ namespace GameLoop.Networking.Buffers
                     var block = _availableBlocks.Dequeue();
                     _unavailableBlocks.Add(block);
 
-                    Logger.DebugInfo($"Retrieved memory block from {_blockSize} pool.");
+                    Logger.DebugInfo($"Retrieved memory block from {_blockSize}-pool.");
                     
                     return block;
                 }
             }
             
-            Logger.DebugInfo($"Allocated un-pooled memory block from {_blockSize} pool.");
+            Logger.DebugInfo($"Allocated un-pooled memory block from {_blockSize}-pool.");
 
             return new byte[_blockSize];
         }
@@ -85,7 +85,7 @@ namespace GameLoop.Networking.Buffers
                 _availableBlocks.Enqueue(block);
             }
             
-            Logger.DebugInfo($"Released memory block to {_blockSize} pool.");
+            Logger.DebugInfo($"Released memory block to {_blockSize}-pool.");
         }
 
         public void Dispose()

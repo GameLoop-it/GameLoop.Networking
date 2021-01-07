@@ -29,5 +29,7 @@ namespace GameLoop.Networking
         Created    = 1,
         Connecting = 2,
         Connected  = 3,
+        
+        Removed = 10,
     }
 }
