@@ -39,6 +39,8 @@ namespace GameLoop.Networking
         public double LastSendPacketTime; 
         public double LastReceivedPacketTime;
 
+        public double DisconnectionTime;
+
         public readonly NetworkStatistics Statistics;
 
         public NetworkConnection(IPEndPoint remoteEndpoint)
@@ -58,6 +60,9 @@ namespace GameLoop.Networking
                     break;
                 case ConnectionState.Connecting:
                     Assert.Check(ConnectionState == ConnectionState.Created);
+                    break;
+                case ConnectionState.Disconnected:
+                    Assert.Check(ConnectionState == ConnectionState.Connected);
                     break;
             }
 

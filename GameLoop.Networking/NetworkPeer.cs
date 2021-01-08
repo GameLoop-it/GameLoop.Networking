@@ -28,7 +28,6 @@ using System.Net;
 using GameLoop.Networking.Memory;
 using GameLoop.Networking.Packets;
 using GameLoop.Networking.Sockets;
-using GameLoop.Networking.Statistics;
 using GameLoop.Utilities.Asserts;
 using GameLoop.Utilities.Logs;
 using GameLoop.Utilities.Timers;
@@ -37,7 +36,9 @@ namespace GameLoop.Networking
 {
     public sealed class NetworkPeer
     {
-        public Action<NetworkConnection> OnConnectionFailed;
+        public event Action<NetworkConnection> OnConnectionFailed;
+        public event Action<NetworkConnection> OnConnected;
+        public event Action<NetworkConnection> OnDisconnected;
 
         private          Timer          _timer;
         private readonly INetworkSocket _socket;
@@ -82,7 +83,10 @@ namespace GameLoop.Networking
 
                 if (_connections.TryGetValue(endpoint, out var connection))
                 {
-                    HandleConnectedPacket(connection, packet);
+                    if (connection.ConnectionState != ConnectionState.Disconnected)
+                    {
+                        HandleConnectedPacket(connection, packet);
+                    }
                 }
                 else
                 {
@@ -120,11 +124,11 @@ namespace GameLoop.Networking
                 buffer[0] = (byte) PacketType.Command;
                 buffer[1] = (byte) CommandType.ConnectionRefused;
                 buffer[2] = (byte) ConnectionRefusedReason.ServerFull;
-                
+
                 SendUnconnected(endpoint, buffer);
 
                 _context.MemoryManager.Free(buffer);
-                
+
                 return;
             }
 
@@ -160,7 +164,7 @@ namespace GameLoop.Networking
                 case ConnectionState.Created:
                     // This is the first time I receive the ConnectionRequest after the
                     // connection creation.
-                    connection.ChangeState(ConnectionState.Connected);
+                    SetConnectionAsConnected(connection);
                     SendCommand(connection, CommandType.ConnectionAccepted);
                     break;
                 case ConnectionState.Connecting:
@@ -184,7 +188,7 @@ namespace GameLoop.Networking
                     Assert.AlwaysFail();
                     break;
                 case ConnectionState.Connecting:
-                    connection.ChangeState(ConnectionState.Connected);
+                    SetConnectionAsConnected(connection);
                     break;
                 case ConnectionState.Connected:
                     // It never happens, ignore it.
@@ -214,7 +218,7 @@ namespace GameLoop.Networking
         {
             SendUnconnected(endpoint, data.Buffer, 0, data.Size);
         }
-        
+
         public void SendUnconnected(IPEndPoint endpoint, byte[] data, int offset, int length)
         {
             _socket.SendTo(endpoint, data, offset, length);
@@ -227,18 +231,29 @@ namespace GameLoop.Networking
 
         private void Send(NetworkConnection connection, byte[] data, int offset, int length)
         {
+            Assert.Check(connection.ConnectionState < ConnectionState.Disconnected);
+            
             connection.LastSendPacketTime = _timer.GetElapsedSeconds();
             _socket.SendTo(connection.RemoteEndpoint, data, offset, length);
             connection.Statistics.IncreaseBytesSent(length);
         }
 
-        private void SendCommand(NetworkConnection connection, CommandType command)
+        private void SendCommand(NetworkConnection connection, CommandType command, byte commandData = 0)
         {
+            Assert.Check(connection.ConnectionState < ConnectionState.Disconnected);
+            
             Logger.DebugInfo($"Sending command {command} to {connection}");
 
-            var buffer = _context.MemoryManager.Allocate(2);
+            var size = 2;
+            if (commandData != 0)
+                size = 3;
+
+            var buffer = _context.MemoryManager.Allocate(size);
             buffer[0] = (byte) PacketType.Command;
             buffer[1] = (byte) command;
+
+            if (commandData != 0)
+                buffer[2] = commandData;
 
             Send(connection, buffer);
 
@@ -264,6 +279,12 @@ namespace GameLoop.Networking
             Assert.Check(removed);
         }
 
+        private void SetConnectionAsConnected(NetworkConnection connection)
+        {
+            connection.ChangeState(ConnectionState.Connected);
+            OnConnected?.Invoke(connection);
+        }
+
         public void Connect(IPEndPoint endpoint)
         {
             var connection = CreateConnection(endpoint);
@@ -285,6 +306,12 @@ namespace GameLoop.Networking
                 case ConnectionState.Connecting:
                     UpdateConnecting(connection);
                     break;
+                case ConnectionState.Connected:
+                    UpdateConnected(connection);
+                    break;
+                case ConnectionState.Disconnected:
+                    UpdateDisconnected(connection);
+                    break;
             }
         }
 
@@ -293,7 +320,7 @@ namespace GameLoop.Networking
             var currentConnectionAttemptTime =
                 connection.LastConnectionAttemptTime + _context.Settings.ConnectionAttemptInterval;
 
-            if (currentConnectionAttemptTime < _timer.GetElapsedSeconds())
+            if (currentConnectionAttemptTime < _timer.Now)
             {
                 if (connection.ConnectionAttempts >= _context.Settings.MaxConnectionsAttempts)
                 {
@@ -305,6 +332,33 @@ namespace GameLoop.Networking
                 connection.LastConnectionAttemptTime =  _timer.GetElapsedSeconds();
 
                 SendCommand(connection, CommandType.ConnectionRequest);
+            }
+        }
+
+        private void UpdateConnected(NetworkConnection connection)
+        {
+            if (connection.LastReceivedPacketTime + _context.Settings.ConnectionTimeout < _timer.Now)
+            {
+                // If I am here, the connection timed out. The last packet has been received too much time ago, so
+                // I assume we can disconnect the connection.
+                DisconnectConnection(connection, DisconnectionReason.Timeout);
+            }
+        }
+
+        private void DisconnectConnection(NetworkConnection connection, DisconnectionReason reason)
+        {
+            SendCommand(connection, CommandType.Disconnection, (byte)reason);
+            connection.ChangeState(ConnectionState.Disconnected);
+            connection.DisconnectionTime = _timer.Now;
+
+            OnDisconnected?.Invoke(connection);
+        }
+
+        private void UpdateDisconnected(NetworkConnection connection)
+        {
+            if (connection.DisconnectionTime + _context.Settings.DisconnectionIdleTime < _timer.Now)
+            {
+                RemoveConnection(connection);
             }
         }
     }

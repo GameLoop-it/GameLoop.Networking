@@ -26,10 +26,11 @@ namespace GameLoop.Networking
 {
     public enum ConnectionState : byte
     {
-        Created    = 1,
-        Connecting = 2,
-        Connected  = 3,
+        Created      = 1,
+        Connecting   = 2,
+        Connected    = 3,
         
-        Removed = 10,
+        Disconnected = 9,
+        Removed      = 10,
     }
 }

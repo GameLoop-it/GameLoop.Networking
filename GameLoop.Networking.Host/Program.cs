@@ -33,8 +33,12 @@ namespace GameLoop.Networking.Host
     {
         public const int ServerPort = 25005;
 
-        public  NetworkPeer Peer;
-        private bool        _isServer;
+        public NetworkPeer Peer;
+
+        public bool IsServer => _isServer;
+        public bool IsClient => !_isServer;
+
+        private bool _isServer;
 
         public static IPEndPoint ServerEndpoint => new IPEndPoint(IPAddress.Loopback, ServerPort);
 
@@ -42,9 +46,18 @@ namespace GameLoop.Networking.Host
         {
             _isServer = isServer;
             Peer      = new NetworkPeer(GetNetworkContext(isServer));
-            
-            if (!isServer)
+            Peer.OnConnected += PeerOnOnConnected;
+
+            if (IsClient)
                 Peer.Connect(ServerEndpoint);
+        }
+
+        private void PeerOnOnConnected(NetworkConnection obj)
+        {
+            if (IsClient)
+            {
+                
+            }
         }
 
         private static NetworkContext GetNetworkContext(bool isServer)
@@ -54,7 +67,7 @@ namespace GameLoop.Networking.Host
 
             return context;
         }
-        
+
         private static void GetNetworkSettings(bool isServer, NetworkContext context)
         {
             if (isServer)
@@ -65,7 +78,7 @@ namespace GameLoop.Networking.Host
 
         public void Update()
         {
-            Peer.Update();
+            Peer?.Update();
         }
     }
 
@@ -78,7 +91,7 @@ namespace GameLoop.Networking.Host
             var peers = new List<TestPeer>();
             peers.Add(new TestPeer(true));
             peers.Add(new TestPeer(false));
-            
+
             foreach (var peer in peers)
             {
                 peer.Peer.Start();
@@ -90,7 +103,7 @@ namespace GameLoop.Networking.Host
                 {
                     peer.Update();
                 }
-                
+
                 Thread.Sleep(15);
             }
         }
