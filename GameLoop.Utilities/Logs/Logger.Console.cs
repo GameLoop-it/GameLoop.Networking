@@ -30,10 +30,23 @@ namespace GameLoop.Utilities.Logs
         public static void InitializeForConsole()
         {
             Initialize(
+                OnDebugCallbackForConsole,
                 OnInfoCallbackForConsole,
                 OnWarningCallbackForConsole,
                 OnErrorCallbackForConsole
             );
+        }
+        
+        private static void OnDebugCallbackForConsole(LogContext context)
+        {
+            var previousConsoleColor = Console.ForegroundColor;
+
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.Write(context.Level);
+            Console.Write($"[{context.CallerFile}::{context.CallerMethod}@{context.CallerLine}] ");
+            Console.WriteLine(context.Message);
+
+            Console.ForegroundColor = previousConsoleColor;
         }
 
         private static void OnInfoCallbackForConsole(LogContext context)

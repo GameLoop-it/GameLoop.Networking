@@ -22,29 +22,74 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-using System.Runtime.CompilerServices;
+using System.Collections.Generic;
+using GameLoop.Utilities.Logs;
 
 namespace GameLoop.Networking.Memory
 {
     public sealed class SimpleMemoryPool : IMemoryPool
     {
-        private readonly IMemoryAllocator _allocator;
-        
-        public SimpleMemoryPool(IMemoryAllocator allocator)
+        private readonly Queue<byte[]> _availableBlocks;
+        private readonly List<byte[]>  _unavailableBlocks;
+
+        private readonly int _blockSize;
+
+        public SimpleMemoryPool(int blockSize, int amount)
         {
-            _allocator = allocator;
-        }
-        
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T[] Rent<T>(int minimumSize)
-        {
-            return _allocator.Allocate<T>(minimumSize);
+            _availableBlocks   = new Queue<byte[]>(amount);
+            _unavailableBlocks = new List<byte[]>(amount);
+
+            _blockSize = blockSize;
+
+            for (var i = 0; i < amount; i++)
+            {
+                _availableBlocks.Enqueue(new byte[blockSize]);
+            }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Release<T>(T[] chunk)
+        public byte[] Allocate()
         {
-            // This simple pool does not care of releasing your shit. ;)
+            lock (_availableBlocks)
+            {
+                if (_availableBlocks.Count > 0)
+                {
+                    var block = _availableBlocks.Dequeue();
+                    _unavailableBlocks.Add(block);
+
+                    Logger.Debug($"Retrieved memory block from {_blockSize}-pool.");
+                    
+                    return block;
+                }
+            }
+            
+            Logger.Debug($"Allocated un-pooled memory block from {_blockSize}-pool.");
+
+            return new byte[_blockSize];
+        }
+
+        public void Free(byte[] block)
+        {
+            lock (_availableBlocks)
+            {
+                for (var i = 0; i < _unavailableBlocks.Count; i++)
+                {
+                    var currentBlock = _unavailableBlocks[i];
+
+                    if (currentBlock == block)
+                    {
+                        _unavailableBlocks.RemoveAt(i);
+                        break;
+                    }
+                }
+
+                _availableBlocks.Enqueue(block);
+            }
+            
+            Logger.Debug($"Released memory block to {_blockSize}-pool.");
+        }
+
+        public void Dispose()
+        {
         }
     }
 }

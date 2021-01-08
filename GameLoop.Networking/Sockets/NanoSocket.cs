@@ -22,13 +22,42 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-using System;
+using System.Net;
+using GameLoop.Networking.Settings;
+using NanoSockets;
 
-namespace GameLoop.Networking.Memory
+namespace GameLoop.Networking.Sockets
 {
-    public interface IMemoryPool : IDisposable
+    public class NanoSocket : INetworkSocket
     {
-        byte[] Allocate();
-        void   Free(byte[] block);
+        private const int SendBufferSize     = NetworkSettings.PacketMtu;
+        private const int ReceiverBufferSize = NetworkSettings.PacketMtu;
+
+        private Socket _socket;
+
+        public void Bind(IPEndPoint endpoint)
+        {
+            _socket = UDP.Create(SendBufferSize, ReceiverBufferSize);
+        }
+
+        public void Close()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void SendTo(IPEndPoint endPoint, byte[] data)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void SendTo(IPEndPoint endPoint, byte[] data, int offset, int length)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public bool Receive(out IPEndPoint endPoint, out byte[] buffer, out int receivedBytes)
+        {
+            throw new System.NotImplementedException();
+        }
     }
 }

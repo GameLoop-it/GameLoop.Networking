@@ -43,5 +43,7 @@ namespace GameLoop.Networking.Settings
         public int        MaxConnectionsAllowed     = 32;
         public int        MaxConnectionsAttempts    = 10;
         public double     ConnectionAttemptInterval = .25f;
+        public double     ConnectionTimeout         = 5f;
+        public double     DisconnectionIdleTime     = 2f;
     }
 }

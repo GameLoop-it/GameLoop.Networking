@@ -1,7 +1,7 @@
 /*
 The MIT License (MIT)
 
-Copyright (c) 2020 Emanuele Manzione, Fredrik Holmstrom
+Copyright (c) 2020 Emanuele Manzione
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,15 +22,29 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-namespace GameLoop.Networking
+using GameLoop.Utilities.Asserts;
+
+namespace GameLoop.Networking.Memory
 {
-    public enum ConnectionState : byte
+    public ref struct MemoryBlock
     {
-        Created      = 1,
-        Connecting   = 2,
-        Connected    = 3,
+        public static MemoryBlock InvalidBlock => new MemoryBlock() {Buffer = null, Size = -1};
         
-        Disconnected = 9,
-        Removed      = 10,
+        public byte[] Buffer;
+        public int    Size;
+
+        public byte this[int index]
+        {
+            get
+            {
+                Assert.AlwaysCheck(index < Size);
+                return Buffer[index];
+            }
+            set
+            {
+                Assert.AlwaysCheck(index < Size);
+                Buffer[index] = value;
+            }
+        }
     }
 }

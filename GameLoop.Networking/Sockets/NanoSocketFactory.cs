@@ -22,16 +22,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-using System.Runtime.CompilerServices;
-
-namespace GameLoop.Networking.Memory
+namespace GameLoop.Networking.Sockets
 {
-    public sealed class SimpleManagedAllocator : IMemoryAllocator
+    public class NanoSocketFactory : INetworkSocketFactory
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T[] Allocate<T>(int size)
+        public INetworkSocket Create()
         {
-            return new T[size];
+            return new NanoSocket();
         }
     }
 }

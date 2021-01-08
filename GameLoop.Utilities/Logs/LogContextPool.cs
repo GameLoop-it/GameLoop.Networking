@@ -21,32 +21,49 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
+
 using System;
 using System.Collections.Generic;
 
 namespace GameLoop.Utilities.Logs
 {
-    public class LogContextPool
+    internal class LogContextPool
     {
+        private readonly Queue<LogContext> _debugContexts;
         private readonly Queue<LogContext> _infoContexts;
         private readonly Queue<LogContext> _warningContexts;
         private readonly Queue<LogContext> _errorContexts;
 
+        private readonly Func<LogContext> _debugFactory;
         private readonly Func<LogContext> _infoFactory;
         private readonly Func<LogContext> _warningFactory;
         private readonly Func<LogContext> _errorFactory;
 
-        public LogContextPool(Func<LogContext> infoFactory, Func<LogContext> warningFactory, Func<LogContext> errorFactory)
+        public LogContextPool(Func<LogContext> debugFactory,   Func<LogContext> infoFactory,
+                              Func<LogContext> warningFactory, Func<LogContext> errorFactory)
         {
+            _debugContexts   = new Queue<LogContext>();
             _infoContexts    = new Queue<LogContext>();
             _warningContexts = new Queue<LogContext>();
             _errorContexts   = new Queue<LogContext>();
 
+            _debugFactory   = debugFactory;
             _infoFactory    = infoFactory;
             _warningFactory = warningFactory;
             _errorFactory   = errorFactory;
         }
 
+        public LogContext GetDebugContext()
+        {
+            lock (_debugContexts)
+            {
+                if (_debugContexts.Count > 0)
+                    return _debugContexts.Dequeue();
+            }
+
+            return _debugFactory.Invoke();
+        }
+        
         public LogContext GetInfoContext()
         {
             lock (_infoContexts)
@@ -80,6 +97,12 @@ namespace GameLoop.Utilities.Logs
             return _errorFactory.Invoke();
         }
 
+        public void ReturnDebugContext(LogContext context)
+        {
+            lock (_debugContexts)
+                _debugContexts.Enqueue(context);
+        }
+        
         public void ReturnInfoContext(LogContext context)
         {
             lock (_infoContexts)

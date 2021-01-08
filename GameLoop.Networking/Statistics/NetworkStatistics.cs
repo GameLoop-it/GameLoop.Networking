@@ -21,11 +21,36 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
-
-namespace GameLoop.Networking.Memory
+namespace GameLoop.Networking.Statistics
 {
-    public interface IMemoryAllocator
+    public class NetworkStatistics
     {
-        T[] Allocate<T>(int size);
+        public ulong BytesSent;
+        public ulong BytesReceived;
+
+        public static NetworkStatistics Create()
+        {
+            return new NetworkStatistics();
+        }
+
+        public void IncreaseBytesSent(int amount)
+        {
+            BytesSent += (ulong)amount;
+        }
+
+        public void IncreaseBytesSent(ulong amount)
+        {
+            BytesSent += amount;
+        }
+
+        public void IncreaseBytesReceived(int amount)
+        {
+            BytesReceived += (ulong)amount;
+        }
+
+        public void IncreaseBytesReceived(ulong amount)
+        {
+            BytesReceived += amount;
+        }
     }
 }

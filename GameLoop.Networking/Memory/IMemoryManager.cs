@@ -22,17 +22,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-namespace GameLoop.Networking.Statistics
+namespace GameLoop.Networking.Memory
 {
-    public class NetworkSocketStatistics
+    public interface IMemoryManager
     {
-        public ulong BytesSent;
-        public ulong BytesReceived;
-        public uint  MalformedReceivedPayloads;
+        MemoryBlock Allocate(int size);
 
-        public static NetworkSocketStatistics Create()
-        {
-            return new NetworkSocketStatistics();
-        }
+        void Free(MemoryBlock block);
     }
 }
