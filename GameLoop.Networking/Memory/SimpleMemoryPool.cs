@@ -25,7 +25,7 @@ THE SOFTWARE.
 using System.Collections.Generic;
 using GameLoop.Utilities.Logs;
 
-namespace GameLoop.Networking.Buffers
+namespace GameLoop.Networking.Memory
 {
     public sealed class SimpleMemoryPool : IMemoryPool
     {

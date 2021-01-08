@@ -27,6 +27,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
+using GameLoop.Networking.Memory;
 
 namespace GameLoop.Networking.Buffers
 {

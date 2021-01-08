@@ -25,6 +25,7 @@ THE SOFTWARE.
 using System;
 using System.Collections.Generic;
 using System.Net;
+using GameLoop.Networking.Memory;
 using GameLoop.Networking.Packets;
 using GameLoop.Networking.Sockets;
 using GameLoop.Networking.Statistics;
@@ -120,7 +121,7 @@ namespace GameLoop.Networking
                 buffer[1] = (byte) CommandType.ConnectionRefused;
                 buffer[2] = (byte) ConnectionRefusedReason.ServerFull;
                 
-                SendUnconnected(endpoint, buffer, 0, 3);
+                SendUnconnected(endpoint, buffer);
 
                 _context.MemoryManager.Free(buffer);
                 
@@ -209,9 +210,9 @@ namespace GameLoop.Networking
             }
         }
 
-        public void SendUnconnected(IPEndPoint endpoint, byte[] data)
+        public void SendUnconnected(IPEndPoint endpoint, MemoryBlock data)
         {
-            SendUnconnected(endpoint, data, 0, data.Length);
+            SendUnconnected(endpoint, data.Buffer, 0, data.Size);
         }
         
         public void SendUnconnected(IPEndPoint endpoint, byte[] data, int offset, int length)
@@ -219,9 +220,9 @@ namespace GameLoop.Networking
             _socket.SendTo(endpoint, data, offset, length);
         }
 
-        private void Send(NetworkConnection connection, byte[] data)
+        private void Send(NetworkConnection connection, MemoryBlock data)
         {
-            Send(connection, data, 0, data.Length);
+            Send(connection, data.Buffer, 0, data.Size);
         }
 
         private void Send(NetworkConnection connection, byte[] data, int offset, int length)

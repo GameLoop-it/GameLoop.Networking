@@ -24,7 +24,7 @@ THE SOFTWARE.
 
 using System;
 
-namespace GameLoop.Networking.Buffers
+namespace GameLoop.Networking.Memory
 {
     public interface IMemoryPool : IDisposable
     {
