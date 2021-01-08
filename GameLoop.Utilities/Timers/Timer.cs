@@ -50,6 +50,12 @@ namespace GameLoop.Utilities.Timers
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public double GetElapsedMilliseconds() => GetElapsedSeconds() * 1000.0;
+
+        public double Now
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetElapsedSeconds();
+        }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static long GetTimestamp() => Stopwatch.GetTimestamp();
