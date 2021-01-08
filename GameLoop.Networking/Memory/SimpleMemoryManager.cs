@@ -63,11 +63,14 @@ namespace GameLoop.Networking.Memory
 
         public void Free(MemoryBlock block)
         {
+            Assert.Check(block.Buffer != null);
+            Assert.Check(block.Size > 0);
+            
             for (var i = 0; i < _pools.Count; i++)
             {
                 var currentPoolEntry = _pools[i];
 
-                if (currentPoolEntry.BlockSize <= block.Size)
+                if (block.Buffer.Length <= currentPoolEntry.BlockSize)
                 {
                     currentPoolEntry.Pool.Free(block.Buffer);
                     return;

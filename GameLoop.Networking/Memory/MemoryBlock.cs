@@ -22,19 +22,29 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+using GameLoop.Utilities.Asserts;
+
 namespace GameLoop.Networking.Memory
 {
     public ref struct MemoryBlock
     {
-        public static readonly MemoryBlock InvalidBlock = new MemoryBlock() {Buffer = null, Size = -1};
+        public static MemoryBlock InvalidBlock => new MemoryBlock() {Buffer = null, Size = -1};
         
         public byte[] Buffer;
         public int    Size;
 
         public byte this[int index]
         {
-            get => Buffer[index];
-            set => Buffer[index] = value;
+            get
+            {
+                Assert.AlwaysCheck(index < Size);
+                return Buffer[index];
+            }
+            set
+            {
+                Assert.AlwaysCheck(index < Size);
+                Buffer[index] = value;
+            }
         }
     }
 }
