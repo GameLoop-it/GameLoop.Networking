@@ -29,6 +29,7 @@ namespace GameLoop.Utilities.Logs
 {
     public static partial class Logger
     {
+        private static Action<LogContext> _onDebugCallback;
         private static Action<LogContext> _onInfoCallback;
         private static Action<LogContext> _onWarningCallback;
         private static Action<LogContext> _onErrorCallback;
@@ -37,14 +38,16 @@ namespace GameLoop.Utilities.Logs
 
         private static object _sync;
 
-        public static void Initialize(Action<LogContext> onInfo, Action<LogContext> onWarning,
-                                      Action<LogContext> onError)
+        public static void Initialize(Action<LogContext> onDebug,    Action<LogContext> onInfo,
+                                      Action<LogContext> onWarning, Action<LogContext> onError)
         {
+            _onDebugCallback   = onDebug;
             _onInfoCallback    = onInfo;
             _onWarningCallback = onWarning;
             _onErrorCallback   = onError;
 
             _contextPool = new LogContextPool(
+                () => new LogContext() {Level = "[DBG]"},
                 () => new LogContext() {Level = "[INF]"},
                 () => new LogContext() {Level = "[WRN]"},
                 () => new LogContext() {Level = "[ERR]"}

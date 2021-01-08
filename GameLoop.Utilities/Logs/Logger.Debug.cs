@@ -31,10 +31,27 @@ namespace GameLoop.Utilities.Logs
     public static partial class Logger
     {
         [Conditional("DEBUG")]
+        public static void Debug(string                    message,
+                                 [CallerFilePath]   string callerPath   = "",
+                                 [CallerLineNumber] long   callerLine   = 0,
+                                 [CallerMemberName] string callerMember = "")
+        {
+            var context = _contextPool.GetDebugContext();
+            context.Message      = message;
+            context.CallerFile   = callerPath;
+            context.CallerMethod = callerMember;
+            context.CallerLine   = callerLine;
+
+            Log(context, _onDebugCallback);
+
+            _contextPool.ReturnDebugContext(context);
+        }
+
+        [Conditional("DEBUG")]
         public static void DebugInfo(string                    message,
-                                [CallerFilePath]   string callerPath   = "",
-                                [CallerLineNumber] long   callerLine   = 0,
-                                [CallerMemberName] string callerMember = "")
+                                     [CallerFilePath]   string callerPath   = "",
+                                     [CallerLineNumber] long   callerLine   = 0,
+                                     [CallerMemberName] string callerMember = "")
         {
             var context = _contextPool.GetInfoContext();
             context.Message      = message;
