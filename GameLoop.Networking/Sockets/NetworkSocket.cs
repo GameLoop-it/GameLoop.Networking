@@ -100,7 +100,7 @@ namespace GameLoop.Networking.Sockets
 
             if (receivedBytes > 0)
             {
-                Logger.DebugInfo($"Received {receivedBytes} bytes from {_receivingFromEndPoint}");
+                Logger.Debug($"Received {receivedBytes} bytes from {_receivingFromEndPoint}");
                 endPoint = (IPEndPoint) _receivingFromEndPoint;
                 buffer   = _receiveBuffer;
                 return true;

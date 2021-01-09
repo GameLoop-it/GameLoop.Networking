@@ -36,7 +36,7 @@ namespace GameLoop.Networking
         public int    ConnectionAttempts;
         public double LastConnectionAttemptTime;
 
-        public double LastSendPacketTime; 
+        public double LastSentPacketTime; 
         public double LastReceivedPacketTime;
 
         public double DisconnectionTime;

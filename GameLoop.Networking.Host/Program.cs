@@ -22,9 +22,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading;
+using GameLoop.Networking.Packets;
 using GameLoop.Utilities.Logs;
 
 namespace GameLoop.Networking.Host
@@ -44,19 +46,26 @@ namespace GameLoop.Networking.Host
 
         public TestPeer(bool isServer)
         {
-            _isServer = isServer;
-            Peer      = new NetworkPeer(GetNetworkContext(isServer));
-            Peer.OnConnected += PeerOnOnConnected;
+            _isServer               =  isServer;
+            Peer                    =  new NetworkPeer(GetNetworkContext(isServer));
+            Peer.OnConnected        += PeerOnConnected;
+            Peer.OnUnreliablePacket += PeerOnUnreliablePacket;
 
             if (IsClient)
                 Peer.Connect(ServerEndpoint);
         }
 
-        private void PeerOnOnConnected(NetworkConnection obj)
+        private void PeerOnUnreliablePacket(NetworkConnection connection, Packet packet)
+        {
+            var number = BitConverter.ToInt32(packet.Data, packet.Offset);
+            Logger.DebugInfo($"Unreliably received: {number}");
+        }
+
+        private void PeerOnConnected(NetworkConnection connection)
         {
             if (IsClient)
             {
-                
+                Peer.SendUnreliable(connection, BitConverter.GetBytes(int.MaxValue));
             }
         }
 
