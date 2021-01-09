@@ -46,5 +46,13 @@ namespace GameLoop.Networking.Memory
                 Buffer[index] = value;
             }
         }
+
+        public static implicit operator MemoryBlock(byte[] buffer) =>
+            new MemoryBlock() {Buffer = buffer, Size = buffer.Length};
+
+        public void CopyFrom(byte[] data, int offset, int length)
+        {
+            System.Buffer.BlockCopy(data, 0, Buffer, 1, length);
+        }
     }
 }

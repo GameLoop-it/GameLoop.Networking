@@ -30,7 +30,8 @@ namespace GameLoop.Networking.Memory
                 if (currentBlockSize > 512)
                 {
                     _pools.Add(new MemoryPoolEntry(NetworkSettings.PacketMtu,
-                                                   new SimpleMemoryPool(NetworkSettings.PacketMtu, initialBucketsSize)));
+                                                   new SimpleMemoryPool(NetworkSettings.PacketMtu,
+                                                                        initialBucketsSize)));
                     break;
                 }
 
@@ -64,8 +65,8 @@ namespace GameLoop.Networking.Memory
         public void Free(MemoryBlock block)
         {
             Assert.Check(block.Buffer != null);
-            Assert.Check(block.Size > 0);
-            
+            Assert.Check(block.Size   > 0);
+
             for (var i = 0; i < _pools.Count; i++)
             {
                 var currentPoolEntry = _pools[i];
@@ -76,7 +77,7 @@ namespace GameLoop.Networking.Memory
                     return;
                 }
             }
-            
+
             Assert.AlwaysFail($"The memory block size of {block.Size} is not supported.");
         }
     }
