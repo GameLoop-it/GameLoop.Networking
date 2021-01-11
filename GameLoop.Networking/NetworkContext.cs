@@ -21,8 +21,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
-using GameLoop.Networking.Buffers;
+
 using GameLoop.Networking.Memory;
+using GameLoop.Networking.Packets;
 using GameLoop.Networking.Settings;
 using GameLoop.Networking.Sockets;
 
@@ -33,5 +34,6 @@ namespace GameLoop.Networking
         public NetworkSettings       Settings      = new NetworkSettings();
         public INetworkSocketFactory SocketFactory = new NetworkSocketFactory();
         public IMemoryManager        MemoryManager = new SimpleMemoryManager(32);
+        public PacketPool            PacketPool    = new PacketPool();
     }
 }

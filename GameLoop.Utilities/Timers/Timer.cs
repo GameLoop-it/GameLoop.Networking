@@ -21,6 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
+
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -38,16 +39,16 @@ namespace GameLoop.Utilities.Timers
             timer.Start();
             return timer;
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsRunning() => _isRunning == 1;
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public long GetElapsedTicks() => IsRunning() ? _elapsed + GetDelta() : _elapsed;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public double GetElapsedSeconds() => GetElapsedTicks() / GetFrequency();
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public double GetElapsedMilliseconds() => GetElapsedSeconds() * 1000.0;
 
@@ -56,10 +57,10 @@ namespace GameLoop.Utilities.Timers
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => GetElapsedSeconds();
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static long GetTimestamp() => Stopwatch.GetTimestamp();
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static double GetFrequency() => Stopwatch.Frequency;
 
@@ -74,21 +75,21 @@ namespace GameLoop.Utilities.Timers
             _start     = GetTimestamp();
             _isRunning = 1;
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Stop()
         {
             var delta = GetDelta();
-            
+
             if (_isRunning == 0) return;
 
             _elapsed   += delta;
             _isRunning =  0;
 
-            if (_elapsed < 0) 
+            if (_elapsed < 0)
                 _elapsed = 0;
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Reset()
         {
@@ -96,7 +97,7 @@ namespace GameLoop.Utilities.Timers
             _elapsed   = 0;
             _isRunning = 0;
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Restart()
         {

@@ -1,7 +1,7 @@
 /*
 The MIT License (MIT)
 
-Copyright (c) 2020 Emanuele Manzione
+Copyright (c) 2020 Emanuele Manzione, Fredrik Holmstrom
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,13 +22,31 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-namespace GameLoop.Networking.Sockets
+namespace GameLoop.Networking.Buffers
 {
-    public class NanoSocketFactory : INetworkSocketFactory
+    public static unsafe class BufferUtility
     {
-        public INetworkSocket Create()
+        public static void WriteUInt64(byte[] targetBuffer, ulong value, int offset, int length = sizeof(ulong))
         {
-            return new NanoSocket();
+            byte* valuePtr = (byte*) &value;
+
+            for (var i = 0; i < length; i++)
+            {
+                targetBuffer[offset + i] = valuePtr[i];
+            }
+        }
+
+        public static ulong ReadUInt64(byte[] targetBuffer, int offset, int length = sizeof(ulong))
+        {
+            ulong value    = 0;
+            byte* valuePtr = (byte*) &value;
+
+            for (var i = 0; i < length; i++)
+            {
+                valuePtr[i] = targetBuffer[offset + i];
+            }
+
+            return value;
         }
     }
 }

@@ -3,6 +3,7 @@
     <PropertyGroup>
         <TargetFramework>netstandard2.0</TargetFramework>
         <LangVersion>latest</LangVersion>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
 
     <ItemGroup>
@@ -15,17 +16,8 @@
 
     <ItemGroup>
         <None Remove="nanosockets.dll" />
-        <Content Include="nanosockets.dll">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </Content>
         <None Remove="nanosockets.dylib" />
-        <Content Include="nanosockets.dylib">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </Content>
         <None Remove="libnanosockets.so" />
-        <Content Include="libnanosockets.so">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </Content>
     </ItemGroup>
 
 </Project>

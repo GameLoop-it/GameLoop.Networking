@@ -26,8 +26,9 @@ namespace GameLoop.Networking.Packets
 {
     public enum PacketType : byte
     {
-        Command = 1,
+        Command    = 1,
         Unreliable = 2,
-        Notify = 3,
+        Notify     = 3,
+        KeepAlive  = 4,
     }
 }

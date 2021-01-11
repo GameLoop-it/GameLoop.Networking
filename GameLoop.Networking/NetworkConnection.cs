@@ -21,13 +21,22 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
+
 using System.Net;
+using GameLoop.Networking.Collections;
 using GameLoop.Networking.Statistics;
 using GameLoop.Utilities.Asserts;
 using GameLoop.Utilities.Logs;
 
 namespace GameLoop.Networking
 {
+    public struct SendEnvelope
+    {
+        public ulong  Sequence;
+        public double Time;
+        public object UserData;
+    }
+    
     public class NetworkConnection
     {
         public IPEndPoint      RemoteEndpoint;
@@ -35,19 +44,47 @@ namespace GameLoop.Networking
 
         public int    ConnectionAttempts;
         public double LastConnectionAttemptTime;
-
-        public double LastSendPacketTime; 
+        public double LastSentPacketTime;
         public double LastReceivedPacketTime;
-
         public double DisconnectionTime;
+
+        public Sequencer SendSequencer;
+        public ulong     LastReceivedSequenceNumber;
+        public ulong     ReceivedHistoryMask;
+
+        public RingBuffer<SendEnvelope> SendWindow;
+        
+        // Initial state
+        // LastReceivedSequenceNumber = 0
+        // ReceivedHistoryMask = 0000 0000 0000 0000
+        
+        // First packet comes in
+        // LastReceivedSequenceNumber = 1
+        // ReceivedHistoryMask = 0000 0000 0000 0000
+        
+        // Second packet comes in
+        // LastReceivedSequenceNumber = 2
+        // ReceivedHistoryMask = 1000 0000 0000 0000
+        
+        // Third packet comes in
+        // LastReceivedSequenceNumber = 3
+        // ReceivedHistoryMask = 1100 0000 0000 0000
+        
+        // Fourth packet has been lost
+        
+        // Fifth packet comes in
+        // LastReceivedSequenceNumber = 5
+        // ReceivedHistoryMask = 1011 0000 0000 0000
 
         public readonly NetworkStatistics Statistics;
 
-        public NetworkConnection(IPEndPoint remoteEndpoint)
+        public NetworkConnection(NetworkContext context, IPEndPoint remoteEndpoint)
         {
             RemoteEndpoint  = remoteEndpoint;
             ConnectionState = ConnectionState.Created;
-            Statistics = NetworkStatistics.Create();
+            Statistics      = NetworkStatistics.Create();
+            SendSequencer   = new Sequencer(context.Settings.SequenceNumberBytes);
+            SendWindow      = new RingBuffer<SendEnvelope>(context.Settings.SendWindowSize);
         }
 
         public void ChangeState(ConnectionState connectionState)

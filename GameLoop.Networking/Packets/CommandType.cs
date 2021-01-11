@@ -35,10 +35,10 @@ namespace GameLoop.Networking.Packets
         // From server to clients when the connection has been refused.
         ConnectionRefused = 3,
         
-        Disconnection = 4,
+        Disconnect = 4,
     }
 
-    public enum ConnectionRefusedReason : byte
+    public enum ConnectionFailedReason : byte
     {
         ServerFull = 1,
     }
@@ -46,5 +46,6 @@ namespace GameLoop.Networking.Packets
     public enum DisconnectionReason : byte
     {
         Timeout = 1,
+        RequestedByPeer = 2,
     }
 }
