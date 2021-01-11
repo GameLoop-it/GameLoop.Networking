@@ -23,7 +23,6 @@ THE SOFTWARE.
 */
 
 using System;
-using GameLoop.Utilities.Exceptions;
 
 namespace GameLoop.Networking.Collections
 {
