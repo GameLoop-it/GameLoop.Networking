@@ -46,5 +46,7 @@ namespace GameLoop.Networking.Settings
         public double     ConnectionTimeout         = 5f;
         public double     DisconnectionIdleTime     = 2f;
         public double     KeepAliveInterval         = 1f;
+        public int        SequenceNumberBytes       = 2;
+        public int        SendWindowSize            = 512;
     }
 }

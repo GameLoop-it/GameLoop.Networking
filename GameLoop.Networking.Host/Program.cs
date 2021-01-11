@@ -65,7 +65,7 @@ namespace GameLoop.Networking.Host
         {
             if (IsClient)
             {
-                Peer.SendUnreliable(connection, BitConverter.GetBytes(int.MaxValue));
+                Peer.SendNotify(connection, BitConverter.GetBytes(int.MaxValue));
             }
         }
 

@@ -25,11 +25,13 @@ THE SOFTWARE.
 using System;
 using System.Collections.Generic;
 using System.Net;
+using GameLoop.Networking.Buffers;
 using GameLoop.Networking.Memory;
 using GameLoop.Networking.Packets;
 using GameLoop.Networking.Settings;
 using GameLoop.Networking.Sockets;
 using GameLoop.Utilities.Asserts;
+using GameLoop.Utilities.Exceptions;
 using GameLoop.Utilities.Logs;
 using GameLoop.Utilities.Timers;
 
@@ -114,6 +116,9 @@ namespace GameLoop.Networking
                     // Just do nothing. It's just a keepalive packet to update the LastReceivedTime
                     // for this connection.
                     break;
+                case PacketType.Notify:
+                    Logger.Debug($"Received notify packet");
+                    break;
             }
         }
 
@@ -150,7 +155,7 @@ namespace GameLoop.Networking
         private void HandleUnreliablePacket(NetworkConnection connection, Packet packet)
         {
             packet.Offset = 1;
-            
+
             OnUnreliablePacket?.Invoke(connection, packet);
         }
 
@@ -235,7 +240,7 @@ namespace GameLoop.Networking
 
         private void HandleDisconnection(NetworkConnection connection, Packet packet)
         {
-            DisconnectConnection(connection, (DisconnectionReason)packet.Data[3], false);
+            DisconnectConnection(connection, (DisconnectionReason) packet.Data[3], false);
         }
 
         public void SendUnconnected(IPEndPoint endpoint, MemoryBlock data)
@@ -252,7 +257,7 @@ namespace GameLoop.Networking
         {
             Send(connection, data.Buffer, 0, data.Size);
         }
-        
+
         private void Send(NetworkConnection connection, byte[] data)
         {
             Send(connection, data, 0, data.Length);
@@ -261,7 +266,7 @@ namespace GameLoop.Networking
         private void Send(NetworkConnection connection, byte[] data, int offset, int length)
         {
             Assert.Check(connection.ConnectionState < ConnectionState.Disconnected);
-            
+
             connection.LastSentPacketTime = _timer.GetElapsedSeconds();
             _socket.SendTo(connection.RemoteEndpoint, data, offset, length);
             connection.Statistics.IncreaseBytesSent(length);
@@ -270,7 +275,7 @@ namespace GameLoop.Networking
         private void SendCommand(NetworkConnection connection, CommandType command, byte commandData = 0)
         {
             Assert.Check(connection.ConnectionState < ConnectionState.Disconnected);
-            
+
             Logger.DebugInfo($"Sending command {command} to {connection}");
 
             // Check if the command is a pre-allocated one.
@@ -311,12 +316,12 @@ namespace GameLoop.Networking
             var buffer = _context.MemoryManager.Allocate(length + 1);
             buffer.CopyFrom(data, 1, length);
             buffer[0] = (byte) PacketType.Unreliable;
-            
+
             Send(connection, buffer);
-            
+
             _context.MemoryManager.Free(buffer);
         }
-        
+
         public void SendUnreliable(NetworkConnection connection, MemoryBlock data)
         {
             SendUnreliable(connection, data.Buffer, 0, data.Size);
@@ -327,9 +332,61 @@ namespace GameLoop.Networking
             Send(connection, _context.PacketPool.KeepAlivePacket);
         }
 
+        public bool SendNotify(NetworkConnection connection, MemoryBlock data, object userData = null)
+        {
+            if (connection.SendWindow.IsFull) return false;
+
+            // The notify packet is composed by:
+            // - PacketType.Notify                  - 1 byte
+            // - Sequence number for this packet    - _context.Settings.SequenceNumberBytes bytes
+            // - Last received sequence number      - _context.Settings.SequenceNumberBytes bytes
+            // - ReceivedHistoryMask                - 8 bytes
+
+            var headerSize = 1 + 8 + (_context.Settings.SequenceNumberBytes * 2);
+
+            if (data.Size > (NetworkSettings.PacketMtu - headerSize))
+            {
+                throw new InvalidOperationException();
+            }
+
+            var sequenceNumber = connection.SendSequencer.Next();
+            var sendTime       = _timer.Now;
+
+            var offset = 0;
+            
+            var buffer = _context.MemoryManager.Allocate(data.Size + headerSize);
+            
+            buffer[0] =  (byte) PacketType.Notify;
+            offset    += 1;
+            
+            BufferUtility.WriteUInt64(buffer.Buffer, sequenceNumber, offset, _context.Settings.SequenceNumberBytes);
+            offset += _context.Settings.SequenceNumberBytes;
+            
+            BufferUtility.WriteUInt64(buffer.Buffer, connection.LastReceivedSequenceNumber, offset, _context.Settings.SequenceNumberBytes);
+            offset += _context.Settings.SequenceNumberBytes;
+            
+            BufferUtility.WriteUInt64(buffer.Buffer, connection.ReceivedHistoryMask, offset);
+            offset += sizeof(ulong);
+            
+            buffer.CopyFrom(data, offset, data.Size);
+            
+            connection.SendWindow.Push(new SendEnvelope()
+            {
+                Sequence = sequenceNumber,
+                Time = sendTime,
+                UserData = userData
+            });
+            
+            Send(connection, buffer);
+
+            _context.MemoryManager.Free(buffer);
+
+            return true;
+        }
+
         private NetworkConnection CreateConnection(IPEndPoint endpoint)
         {
-            var connection = new NetworkConnection(endpoint);
+            var connection = new NetworkConnection(_context, endpoint);
             connection.LastReceivedPacketTime = _timer.GetElapsedSeconds();
             _connections.Add(endpoint, connection);
 
@@ -365,7 +422,7 @@ namespace GameLoop.Networking
                 Logger.Error($"Cannot disconnect {connection} with state {connection.ConnectionState}");
                 return;
             }
-            
+
             DisconnectConnection(connection, DisconnectionReason.RequestedByPeer);
         }
 
@@ -430,7 +487,8 @@ namespace GameLoop.Networking
             }
         }
 
-        private void DisconnectConnection(NetworkConnection connection, DisconnectionReason reason, bool sendToOthers = true)
+        private void DisconnectConnection(NetworkConnection connection, DisconnectionReason reason,
+                                          bool              sendToOthers = true)
         {
             if (sendToOthers)
             {

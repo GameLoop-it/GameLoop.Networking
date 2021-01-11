@@ -1,7 +1,7 @@
 /*
 The MIT License (MIT)
 
-Copyright (c) 2020 Emanuele Manzione
+Copyright (c) 2020 Emanuele Manzione, Fredrik Holmstrom
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,42 +22,31 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-using GameLoop.Utilities.Asserts;
-
-namespace GameLoop.Networking.Memory
+namespace GameLoop.Networking.Buffers
 {
-    public ref struct MemoryBlock
+    public static unsafe class BufferUtility
     {
-        public static MemoryBlock InvalidBlock => new MemoryBlock() {Buffer = null, Size = -1};
-        
-        public byte[] Buffer;
-        public int    Size;
-
-        public byte this[int index]
+        public static void WriteUInt64(byte[] targetBuffer, ulong value, int offset, int length = sizeof(ulong))
         {
-            get
+            byte* valuePtr = (byte*) &value;
+
+            for (var i = 0; i < length; i++)
             {
-                Assert.AlwaysCheck(index < Size);
-                return Buffer[index];
-            }
-            set
-            {
-                Assert.AlwaysCheck(index < Size);
-                Buffer[index] = value;
+                targetBuffer[offset + i] = valuePtr[i];
             }
         }
 
-        public static implicit operator MemoryBlock(byte[] buffer) =>
-            new MemoryBlock() {Buffer = buffer, Size = buffer.Length};
+        public static ulong ReadUInt64(byte[] targetBuffer, int offset, int length = sizeof(ulong))
+        {
+            ulong value    = 0;
+            byte* valuePtr = (byte*) &value;
 
-        public void CopyFrom(byte[] data, int offset, int length)
-        {
-            System.Buffer.BlockCopy(data, 0, Buffer, 1, length);
-        }
-        
-        public void CopyFrom(MemoryBlock data, int offset, int length)
-        {
-            System.Buffer.BlockCopy(data.Buffer, 0, Buffer, 1, length);
+            for (var i = 0; i < length; i++)
+            {
+                valuePtr[i] = targetBuffer[offset + i];
+            }
+
+            return value;
         }
     }
 }
