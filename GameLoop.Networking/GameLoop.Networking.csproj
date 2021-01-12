@@ -11,6 +11,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\GameLoop.Networking.Transport\GameLoop.Networking.Transport.csproj" />
         <ProjectReference Include="..\GameLoop.Utilities\GameLoop.Utilities.csproj" />
     </ItemGroup>
 

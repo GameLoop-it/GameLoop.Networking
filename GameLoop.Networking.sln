@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameLoop.Utilities", "GameL
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameLoop.Networking.Host", "GameLoop.Networking.Host\GameLoop.Networking.Host.csproj", "{B468F864-C7A6-4B55-9F66-17F4790944EC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameLoop.Networking.Transport", "GameLoop.Networking.Transport\GameLoop.Networking.Transport.csproj", "{3A596371-BEEB-4FB5-9A4B-9AEFD9220542}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{B468F864-C7A6-4B55-9F66-17F4790944EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B468F864-C7A6-4B55-9F66-17F4790944EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B468F864-C7A6-4B55-9F66-17F4790944EC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3A596371-BEEB-4FB5-9A4B-9AEFD9220542}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3A596371-BEEB-4FB5-9A4B-9AEFD9220542}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3A596371-BEEB-4FB5-9A4B-9AEFD9220542}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3A596371-BEEB-4FB5-9A4B-9AEFD9220542}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
