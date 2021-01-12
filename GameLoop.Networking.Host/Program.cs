@@ -26,23 +26,29 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading;
-using GameLoop.Networking.Packets;
+using GameLoop.Networking.Transport.Packets;
 using GameLoop.Utilities.Logs;
 
-namespace GameLoop.Networking.Host
+namespace GameLoop.Networking.Transport.Host
 {
     public class TestPeer
     {
         public const int ServerPort = 25005;
+
+        public const int NumberCount = 16;
 
         public NetworkPeer Peer;
 
         public bool IsServer => _isServer;
         public bool IsClient => !_isServer;
 
-        private bool _isServer;
+        private bool              _isServer;
+        private NetworkConnection _remoteConnection;
 
         public static IPEndPoint ServerEndpoint => new IPEndPoint(IPAddress.Loopback, ServerPort);
+
+        private int          _numberCounter;
+        private HashSet<int> _numberSet;
 
         public TestPeer(bool isServer)
         {
@@ -50,9 +56,29 @@ namespace GameLoop.Networking.Host
             Peer                    =  new NetworkPeer(GetNetworkContext(isServer));
             Peer.OnConnected        += PeerOnConnected;
             Peer.OnUnreliablePacket += PeerOnUnreliablePacket;
+            Peer.OnNotifyPacketLost += PeerOnNotifyPacketLost;
+            Peer.OnNotifyPacketDelivered += PeerOnNotifyPacketDelivered;
+            Peer.OnNotifyPacketReceived += PeerOnNotifyPacketReceived;
+
+            _numberSet = new HashSet<int>(NumberCount);
 
             if (IsClient)
                 Peer.Connect(ServerEndpoint);
+        }
+
+        private void PeerOnNotifyPacketReceived(NetworkConnection connection, Packet packet)
+        {
+            
+        }
+
+        private void PeerOnNotifyPacketDelivered(NetworkConnection connection, object userData)
+        {
+            Logger.Warning($"Delivered: {userData}");
+        }
+
+        private void PeerOnNotifyPacketLost(NetworkConnection connection, object userData)
+        {
+            Logger.Error($"Lost: {userData}");
         }
 
         private void PeerOnUnreliablePacket(NetworkConnection connection, Packet packet)
@@ -63,10 +89,7 @@ namespace GameLoop.Networking.Host
 
         private void PeerOnConnected(NetworkConnection connection)
         {
-            if (IsClient)
-            {
-                Peer.SendNotify(connection, BitConverter.GetBytes(int.MaxValue));
-            }
+            _remoteConnection = connection;
         }
 
         private static NetworkContext GetNetworkContext(bool isServer)
@@ -83,11 +106,25 @@ namespace GameLoop.Networking.Host
                 context.Settings.BindingEndpoint = ServerEndpoint;
             else
                 context.Settings.BindingEndpoint = new IPEndPoint(IPAddress.Any, 0);
+
+            context.Settings.SimulatedLoss = .25f;
         }
 
         public void Update()
         {
             Peer?.Update();
+
+            if (_remoteConnection != null)
+            {
+                if (IsClient && _numberCounter < NumberCount)
+                {
+                    Peer?.SendNotify(_remoteConnection, BitConverter.GetBytes(++_numberCounter), _numberCounter);
+                }
+                else
+                {
+                    Peer?.SendNotify(_remoteConnection, new byte[0], null);
+                }
+            }
         }
     }
 
@@ -113,7 +150,7 @@ namespace GameLoop.Networking.Host
                     peer.Update();
                 }
 
-                Thread.Sleep(15);
+                Thread.Sleep(100);
             }
         }
     }
