@@ -24,16 +24,14 @@ THE SOFTWARE.
 
 namespace GameLoop.Networking.Transport
 {
-    public struct Sequencer
+    public struct NetworkSequencer
     {
         private int   _shift;
-        private int   _bytes;
         private ulong _mask;
         private ulong _sequence;
 
-        public Sequencer(int bytes)
+        public NetworkSequencer(int bytes)
         {
-            _bytes    = bytes;
             _sequence = 0;
 
             // Example:
@@ -42,7 +40,7 @@ namespace GameLoop.Networking.Transport
             _shift = (sizeof(ulong) - bytes) * 8;
 
             // Example:
-            // bytes = 1
+            // bytes  = 1
             // 1 << 8 = 256
             // - 1    = 255
             //        = 1111 1111
@@ -53,7 +51,7 @@ namespace GameLoop.Networking.Transport
         {
             // This is how it wraps. Faster than modulo operator.
             // Example:
-            // _bytes       = 1
+            // bytes        = 1
             // _mask        = 1111 1111
             // sequence     = 1111 1111        - it is at its maximum now
             // sequence + 1 = 0001 0000 0000   - so if I add 1 it has to wrap around to 0
@@ -69,7 +67,7 @@ namespace GameLoop.Networking.Transport
         public long Distance(ulong from, ulong to)
         {
             // Example:
-            // _bytes = 1
+            // bytes  = 1
             // _shift = 56
             // from = 1
             // to = 2
