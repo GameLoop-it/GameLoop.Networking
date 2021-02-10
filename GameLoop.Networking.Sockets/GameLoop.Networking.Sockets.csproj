@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <RootNamespace>GameLoop.Networking.Transport.NanoSockets</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\GameLoop.Networking.Transport\GameLoop.Networking.Transport.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="libnanosockets.so" />
+      <None Remove="nanosockets.dll" />
+      <None Remove="nanosockets.dylib" />
+    </ItemGroup>
+
+</Project>
