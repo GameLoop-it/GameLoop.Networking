@@ -69,5 +69,19 @@ namespace GameLoop.Utilities.Asserts
         {
             if (condition == false) Fail(message, parameters);
         }
+        
+        [Conditional("DEBUG")]
+        [DebuggerHidden]
+        public static void NotNull(object obj)
+        {
+            if (obj == null) Fail();
+        }
+        
+        [Conditional("DEBUG")]
+        [DebuggerHidden]
+        public static void NotNull(object obj, string message)
+        {
+            if (obj == null) Fail(message);
+        }
     }
 }

@@ -194,7 +194,7 @@ namespace GameLoop.Networking.Transport
             packet.Offset += _context.Settings.SequenceNumberBytes;
 
             var sequenceDistance =
-                connection.SendSequencer.Distance(packetSequenceNumber, connection.LastReceivedSequenceNumber);
+                connection.SendNetworkSequencer.Distance(packetSequenceNumber, connection.LastReceivedSequenceNumber);
 
             // Check if the sequence distance is too far out of bounds.
             // If so, I just can't restore the connection. Just disconnect it.
@@ -251,7 +251,7 @@ namespace GameLoop.Networking.Transport
             while (!connection.SendWindow.IsEmpty)
             {
                 var envelope = connection.SendWindow.Peek();
-                var distance = (int) connection.SendSequencer.Distance(envelope.Sequence, lastReceivedSequence);
+                var distance = (int) connection.SendNetworkSequencer.Distance(envelope.Sequence, lastReceivedSequence);
 
                 if (distance > 0) break;
 
@@ -470,7 +470,7 @@ namespace GameLoop.Networking.Transport
                 throw new InvalidOperationException();
             }
 
-            var sequenceNumber = connection.SendSequencer.Next();
+            var sequenceNumber = connection.SendNetworkSequencer.Next();
             var sendTime       = _timer.Now;
 
             var offset = 0;

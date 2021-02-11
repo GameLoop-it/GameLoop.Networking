@@ -8,6 +8,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameLoop.Networking.Host", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameLoop.Networking.Transport", "GameLoop.Networking.Transport\GameLoop.Networking.Transport.csproj", "{3A596371-BEEB-4FB5-9A4B-9AEFD9220542}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameLoop.Networking.Sockets", "GameLoop.Networking.Sockets\GameLoop.Networking.Sockets.csproj", "{0DE6AC16-432C-4931-A67A-2DA483A2D554}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{F28E3075-65D8-4C31-BB8B-6989855368F0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameLoop.Networking.Sockets.Tests", "GameLoop.Networking.Sockets.Tests\GameLoop.Networking.Sockets.Tests.csproj", "{0ABC1E56-C96D-4BC6-B9F0-4891C393A6F9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +36,16 @@ Global
 		{3A596371-BEEB-4FB5-9A4B-9AEFD9220542}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3A596371-BEEB-4FB5-9A4B-9AEFD9220542}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3A596371-BEEB-4FB5-9A4B-9AEFD9220542}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0DE6AC16-432C-4931-A67A-2DA483A2D554}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0DE6AC16-432C-4931-A67A-2DA483A2D554}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0DE6AC16-432C-4931-A67A-2DA483A2D554}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0DE6AC16-432C-4931-A67A-2DA483A2D554}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0ABC1E56-C96D-4BC6-B9F0-4891C393A6F9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0ABC1E56-C96D-4BC6-B9F0-4891C393A6F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0ABC1E56-C96D-4BC6-B9F0-4891C393A6F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0ABC1E56-C96D-4BC6-B9F0-4891C393A6F9}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{0ABC1E56-C96D-4BC6-B9F0-4891C393A6F9} = {F28E3075-65D8-4C31-BB8B-6989855368F0}
 	EndGlobalSection
 EndGlobal

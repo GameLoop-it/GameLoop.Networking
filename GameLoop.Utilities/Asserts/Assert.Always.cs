@@ -70,5 +70,19 @@ namespace GameLoop.Utilities.Asserts
         {
             if (condition == false) AlwaysFail(message, parameters);
         }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DebuggerHidden]
+        public static void AlwaysNotNull(object obj)
+        {
+            if (obj == null) AlwaysFail();
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DebuggerHidden]
+        public static void AlwaysNotNull(object obj, string message)
+        {
+            if (obj == null) AlwaysFail(message);
+        }
     }
 }

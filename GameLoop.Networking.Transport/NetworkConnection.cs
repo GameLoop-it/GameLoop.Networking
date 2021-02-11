@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+using System;
 using System.Net;
 using GameLoop.Networking.Transport.Statistics;
 using GameLoop.Utilities.Asserts;
@@ -36,7 +37,7 @@ namespace GameLoop.Networking.Transport
         public double Time;
         public object UserData;
     }
-    
+
     public class NetworkConnection
     {
         public IPEndPoint      RemoteEndpoint;
@@ -50,43 +51,44 @@ namespace GameLoop.Networking.Transport
 
         public double RoundTripTime;
 
-        public Sequencer SendSequencer;
-        public ulong     LastReceivedSequenceNumber;
-        public ulong     ReceivedHistoryMask;
+        public NetworkSequencer SendNetworkSequencer;
+        public ulong            LastReceivedSequenceNumber;
+        public ulong            ReceivedHistoryMask;
 
         public RingBuffer<SendEnvelope> SendWindow;
-        
+
+        // Example for ReceivedHistoryMask (on a smaller mask):
         // Initial state
         // LastReceivedSequenceNumber = 0
-        // ReceivedHistoryMask = 0000 0000 0000 0000
-        
+        // ReceivedHistoryMask = 00000000 00000000
+
         // First packet comes in
         // LastReceivedSequenceNumber = 1
-        // ReceivedHistoryMask = 0000 0000 0000 0000
-        
+        // ReceivedHistoryMask = 00000000 00000000
+
         // Second packet comes in
         // LastReceivedSequenceNumber = 2
-        // ReceivedHistoryMask = 1000 0000 0000 0000
-        
+        // ReceivedHistoryMask = 00000000 00000001
+
         // Third packet comes in
         // LastReceivedSequenceNumber = 3
-        // ReceivedHistoryMask = 1100 0000 0000 0000
-        
+        // ReceivedHistoryMask = 00000000 00000011
+
         // Fourth packet has been lost
-        
+
         // Fifth packet comes in
         // LastReceivedSequenceNumber = 5
-        // ReceivedHistoryMask = 1011 0000 0000 0000
+        // ReceivedHistoryMask = 00000000 00001101
 
         public readonly NetworkStatistics Statistics;
 
         public NetworkConnection(NetworkContext context, IPEndPoint remoteEndpoint)
         {
-            RemoteEndpoint  = remoteEndpoint;
-            ConnectionState = ConnectionState.Created;
-            Statistics      = NetworkStatistics.Create();
-            SendSequencer   = new Sequencer(context.Settings.SequenceNumberBytes);
-            SendWindow      = new RingBuffer<SendEnvelope>(context.Settings.SendWindowSize);
+            RemoteEndpoint       = remoteEndpoint;
+            ConnectionState      = ConnectionState.Created;
+            Statistics           = NetworkStatistics.Create();
+            SendNetworkSequencer = new NetworkSequencer(context.Settings.SequenceNumberBytes);
+            SendWindow           = new RingBuffer<SendEnvelope>(context.Settings.SendWindowSize);
         }
 
         public void ChangeState(ConnectionState connectionState)
@@ -111,7 +113,8 @@ namespace GameLoop.Networking.Transport
 
         public override string ToString()
         {
-            return $"[Connection={RemoteEndpoint} Recv={Statistics.BytesReceived} Sent={Statistics.BytesSent}]";
+            return
+                $"[Connection={RemoteEndpoint} Recv={Statistics.BytesReceived} Sent={Statistics.BytesSent} RTT={Math.Round(RoundTripTime * 1000, 2)}ms]";
         }
     }
 }

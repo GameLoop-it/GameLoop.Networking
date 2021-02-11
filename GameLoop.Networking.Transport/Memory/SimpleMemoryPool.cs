@@ -23,7 +23,9 @@ THE SOFTWARE.
 */
 
 using System.Collections.Generic;
+#if LOGS_MEMORYPOOL
 using GameLoop.Utilities.Logs;
+#endif
 using GameLoop.Utilities.Memory;
 
 namespace GameLoop.Networking.Transport.Memory
@@ -56,15 +58,15 @@ namespace GameLoop.Networking.Transport.Memory
                 {
                     var block = _availableBlocks.Dequeue();
                     _unavailableBlocks.Add(block);
-
+#if LOGS_MEMORYPOOL
                     Logger.Debug($"Retrieved memory block from {_blockSize}-pool.");
-                    
+#endif 
                     return block;
                 }
             }
-            
+#if LOGS_MEMORYPOOL
             Logger.Debug($"Allocated un-pooled memory block from {_blockSize}-pool.");
-
+#endif
             return new byte[_blockSize];
         }
 
@@ -85,8 +87,9 @@ namespace GameLoop.Networking.Transport.Memory
 
                 _availableBlocks.Enqueue(block);
             }
-            
+#if LOGS_MEMORYPOOL            
             Logger.Debug($"Released memory block to {_blockSize}-pool.");
+#endif
         }
 
         public void Dispose()

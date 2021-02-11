@@ -52,12 +52,12 @@ namespace GameLoop.Utilities.Memory
 
         public void CopyFrom(byte[] data, int offset, int length)
         {
-            System.Buffer.BlockCopy(data, 0, Buffer, 1, length);
+            System.Buffer.BlockCopy(data, 0, Buffer, offset, length);
         }
         
         public void CopyFrom(MemoryBlock data, int offset, int length)
         {
-            System.Buffer.BlockCopy(data.Buffer, 0, Buffer, 1, length);
+            System.Buffer.BlockCopy(data.Buffer, 0, Buffer, offset, length);
         }
     }
 }
