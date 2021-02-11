@@ -86,6 +86,6 @@ writer.Write("36");
 
 ## Credits
 
-- [Emanuele Manzione](https://github.com/manhunterita) for the time he spent on this library _(Hi, it's me!)_
-- [Fredrik Holmström](https://github.com/fholm) for his knowledge and his great [NetCode Talk](https://www.twitch.tv/fholm)
-- [Stanislav Denisov](https://github.com/nxrighthere) for his great [NanoSockets](https://github.com/nxrighthere/NanoSockets) library
+- [Emanuele "ManHunter" Manzione](https://github.com/manhunterita) for the time he spent on this library _(Hi, it's me!)_
+- [Fredrik "fholm" Holmström](https://github.com/fholm) for his knowledge and his great [NetCode Talk](https://www.twitch.tv/fholm)
+- [Stanislav "nxrighthere" Denisov](https://github.com/nxrighthere) for his great [NanoSockets](https://github.com/nxrighthere/NanoSockets) library

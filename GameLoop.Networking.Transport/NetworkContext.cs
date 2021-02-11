@@ -25,16 +25,14 @@ THE SOFTWARE.
 using GameLoop.Networking.Transport.Memory;
 using GameLoop.Networking.Transport.Packets;
 using GameLoop.Networking.Transport.Settings;
-using GameLoop.Networking.Transport.Sockets;
 using GameLoop.Utilities.Memory;
 
 namespace GameLoop.Networking.Transport
 {
     public class NetworkContext
     {
-        public NetworkSettings       Settings      = new NetworkSettings();
-        public INetworkSocketFactory SocketFactory = new NetworkSocketFactory();
-        public IMemoryManager        MemoryManager = new SimpleMemoryManager(32);
-        public PacketPool            PacketPool    = new PacketPool();
+        public NetworkSettings Settings      = new NetworkSettings();
+        public IMemoryManager  MemoryManager = new SimpleMemoryManager(32);
+        public PacketPool      PacketPool    = new PacketPool();
     }
 }

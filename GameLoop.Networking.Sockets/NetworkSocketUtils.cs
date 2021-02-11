@@ -25,9 +25,9 @@ THE SOFTWARE.
 using System;
 using System.Net.Sockets;
 
-namespace GameLoop.Networking.Transport.Sockets
+namespace GameLoop.Networking.Sockets
 {
-    public static class NetworkSocketUtils
+    internal static class NetworkSocketUtils
     {
         private const uint IocIn     = 0x80000000;
         private const uint IocVendor = 0x18000000;

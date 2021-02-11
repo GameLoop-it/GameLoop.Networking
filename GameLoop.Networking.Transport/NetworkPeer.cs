@@ -25,11 +25,11 @@ THE SOFTWARE.
 using System;
 using System.Collections.Generic;
 using System.Net;
+using GameLoop.Networking.Sockets;
 using GameLoop.Networking.Transport.Buffers;
 using GameLoop.Networking.Transport.Memory;
 using GameLoop.Networking.Transport.Packets;
 using GameLoop.Networking.Transport.Settings;
-using GameLoop.Networking.Transport.Sockets;
 using GameLoop.Utilities.Asserts;
 using GameLoop.Utilities.Logs;
 using GameLoop.Utilities.Memory;
@@ -50,11 +50,11 @@ namespace GameLoop.Networking.Transport
         public event Action<NetworkConnection, Packet> OnNotifyPacketReceived;
 
         private          Timer          _timer;
-        private readonly INetworkSocket _socket;
+        private          NativeSocket   _socket;
         private readonly NetworkContext _context;
 
-        private readonly Dictionary<IPEndPoint, NetworkConnection> _connections;
-        
+        private readonly Dictionary<NetworkAddress, NetworkConnection> _connections;
+
         // The notify packet is composed by:
         // - PacketType.Notify                  - 1 byte
         // - Sequence number for this packet    - _context.Settings.SequenceNumberBytes bytes
@@ -63,19 +63,19 @@ namespace GameLoop.Networking.Transport
         private int NotifyHeaderSize => 1 + 8 + (_context.Settings.SequenceNumberBytes * 2);
 
         private Random _random;
-        
+
         public NetworkPeer(NetworkContext context)
         {
             _context     = context;
-            _socket      = _context.SocketFactory.Create();
-            _connections = new Dictionary<IPEndPoint, NetworkConnection>();
+            _socket      = new NativeSocket();
+            _connections = new Dictionary<NetworkAddress, NetworkConnection>();
             _random      = new Random(Environment.TickCount);
         }
 
         public void Start()
         {
             _timer = Timer.StartNew();
-            _socket.Bind(_context.Settings.BindingEndpoint);
+            _socket.Bind(ref _context.Settings.BindingEndpoint);
         }
 
         public void Close()
@@ -92,24 +92,26 @@ namespace GameLoop.Networking.Transport
 
         private void HandleReceiving()
         {
-            while (_socket.Receive(out var endpoint, out var buffer, out var receivedBytes))
+            var buffer = _context.MemoryManager.Allocate(NetworkSettings.PacketMtu);
+            
+            while (_socket.Receive(out var address, buffer, out var receivedBytes))
             {
                 if (_context.Settings.SimulatedLoss > 0)
                 {
                     if (_random.NextDouble() <= _context.Settings.SimulatedLoss)
                     {
-                        Logger.DebugWarning($"[Loss Simulator] Lost {receivedBytes} bytes from {endpoint}");
+                        Logger.DebugWarning($"[Loss Simulator] Lost {receivedBytes} bytes from {address}");
                         return;
                     }
                 }
-                
+
                 var packet = new Packet()
                 {
-                    Data   = buffer,
+                    Data   = buffer.Buffer,
                     Length = receivedBytes
                 };
 
-                if (_connections.TryGetValue(endpoint, out var connection))
+                if (_connections.TryGetValue(address, out var connection))
                 {
                     if (connection.ConnectionState != ConnectionState.Disconnected)
                     {
@@ -118,7 +120,7 @@ namespace GameLoop.Networking.Transport
                 }
                 else
                 {
-                    HandleUnconnectedPacket(endpoint, packet);
+                    HandleUnconnectedPacket(address, packet);
                 }
             }
         }
@@ -146,7 +148,7 @@ namespace GameLoop.Networking.Transport
             }
         }
 
-        private void HandleUnconnectedPacket(IPEndPoint endpoint, Packet packet)
+        private void HandleUnconnectedPacket(NetworkAddress address, Packet packet)
         {
             // If the length is less than 2, discard it: it's garbage.
             if (packet.Length < 2) return;
@@ -163,14 +165,14 @@ namespace GameLoop.Networking.Transport
                 buffer[1] = (byte) CommandType.ConnectionRefused;
                 buffer[2] = (byte) ConnectionFailedReason.ServerFull;
 
-                SendUnconnected(endpoint, buffer);
+                SendUnconnected(address, buffer);
 
                 _context.MemoryManager.Free(buffer);
 
                 return;
             }
 
-            var connection = CreateConnection(endpoint);
+            var connection = CreateConnection(address);
             connection.Statistics.IncreaseBytesReceived(packet.Length);
 
             HandleCommandPacket(connection, packet);
@@ -186,7 +188,7 @@ namespace GameLoop.Networking.Transport
         private void HandleNotifyPacket(NetworkConnection connection, Packet packet)
         {
             if (packet.Length < NotifyHeaderSize) return;
-            
+
             packet.Offset = 1;
 
             var packetSequenceNumber =
@@ -242,7 +244,7 @@ namespace GameLoop.Networking.Transport
             packet.Offset += sizeof(ulong);
 
             AckPackets(connection, remoteLastReceivedSequence, remoteReceivedHistoryMask);
-            
+
             OnNotifyPacketReceived?.Invoke(connection, packet);
         }
 
@@ -370,14 +372,14 @@ namespace GameLoop.Networking.Transport
             DisconnectConnection(connection, (DisconnectionReason) packet.Data[3], false);
         }
 
-        public void SendUnconnected(IPEndPoint endpoint, MemoryBlock data)
+        public void SendUnconnected(NetworkAddress address, MemoryBlock data)
         {
-            SendUnconnected(endpoint, data.Buffer, 0, data.Size);
+            SendUnconnected(address, data.Buffer, 0, data.Size);
         }
 
-        public void SendUnconnected(IPEndPoint endpoint, byte[] data, int offset, int length)
+        public void SendUnconnected(NetworkAddress address, byte[] data, int offset, int length)
         {
-            _socket.SendTo(endpoint, data, offset, length);
+            _socket.SendTo(address, data, offset, length);
         }
 
         private void Send(NetworkConnection connection, MemoryBlock data)
@@ -395,7 +397,7 @@ namespace GameLoop.Networking.Transport
             Assert.Check(connection.ConnectionState < ConnectionState.Disconnected);
 
             connection.LastSentPacketTime = _timer.GetElapsedSeconds();
-            _socket.SendTo(connection.RemoteEndpoint, data, offset, length);
+            _socket.SendTo(connection.RemoteAddress, data, offset, length);
             connection.Statistics.IncreaseBytesSent(length);
         }
 
@@ -506,11 +508,11 @@ namespace GameLoop.Networking.Transport
             return true;
         }
 
-        private NetworkConnection CreateConnection(IPEndPoint endpoint)
+        private NetworkConnection CreateConnection(NetworkAddress address)
         {
-            var connection = new NetworkConnection(_context, endpoint);
+            var connection = new NetworkConnection(_context, address);
             connection.LastReceivedPacketTime = _timer.GetElapsedSeconds();
-            _connections.Add(endpoint, connection);
+            _connections.Add(address, connection);
 
             Logger.DebugInfo($"New connection from {connection}.");
 
@@ -520,7 +522,7 @@ namespace GameLoop.Networking.Transport
         private void RemoveConnection(NetworkConnection connection)
         {
             Assert.Check(connection.ConnectionState != ConnectionState.Removed);
-            var removed = _connections.Remove(connection.RemoteEndpoint);
+            var removed = _connections.Remove(connection.RemoteAddress);
             connection.ChangeState(ConnectionState.Removed);
             Assert.Check(removed);
         }
@@ -531,9 +533,9 @@ namespace GameLoop.Networking.Transport
             OnConnected?.Invoke(connection);
         }
 
-        public void Connect(IPEndPoint endpoint)
+        public void Connect(NetworkAddress address)
         {
-            var connection = CreateConnection(endpoint);
+            var connection = CreateConnection(address);
             connection.ChangeState(ConnectionState.Connecting);
         }
 
