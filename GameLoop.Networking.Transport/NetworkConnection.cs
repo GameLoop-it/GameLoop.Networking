@@ -24,6 +24,7 @@ THE SOFTWARE.
 
 using System;
 using System.Net;
+using GameLoop.Networking.Sockets;
 using GameLoop.Networking.Transport.Statistics;
 using GameLoop.Utilities.Asserts;
 using GameLoop.Utilities.Collections;
@@ -40,7 +41,7 @@ namespace GameLoop.Networking.Transport
 
     public class NetworkConnection
     {
-        public IPEndPoint      RemoteEndpoint;
+        public NetworkAddress  RemoteAddress;
         public ConnectionState ConnectionState { get; private set; }
 
         public int    ConnectionAttempts;
@@ -82,9 +83,9 @@ namespace GameLoop.Networking.Transport
 
         public readonly NetworkStatistics Statistics;
 
-        public NetworkConnection(NetworkContext context, IPEndPoint remoteEndpoint)
+        public NetworkConnection(NetworkContext context, NetworkAddress remoteAddress)
         {
-            RemoteEndpoint       = remoteEndpoint;
+            RemoteAddress       = remoteAddress;
             ConnectionState      = ConnectionState.Created;
             Statistics           = NetworkStatistics.Create();
             SendNetworkSequencer = new NetworkSequencer(context.Settings.SequenceNumberBytes);
@@ -114,7 +115,7 @@ namespace GameLoop.Networking.Transport
         public override string ToString()
         {
             return
-                $"[Connection={RemoteEndpoint} Recv={Statistics.BytesReceived} Sent={Statistics.BytesSent} RTT={Math.Round(RoundTripTime * 1000, 2)}ms]";
+                $"[Connection={RemoteAddress} Recv={Statistics.BytesReceived} Sent={Statistics.BytesSent} RTT={Math.Round(RoundTripTime * 1000, 2)}ms]";
         }
     }
 }

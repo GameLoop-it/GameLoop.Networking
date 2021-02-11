@@ -26,6 +26,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading;
+using GameLoop.Networking.Sockets;
 using GameLoop.Networking.Transport.Packets;
 using GameLoop.Utilities.Logs;
 
@@ -33,7 +34,7 @@ namespace GameLoop.Networking.Transport.Host
 {
     public class TestPeer
     {
-        public const int ServerPort = 25005;
+        public const ushort ServerPort = 25005;
 
         public const int NumberCount = 16;
 
@@ -45,7 +46,7 @@ namespace GameLoop.Networking.Transport.Host
         private bool              _isServer;
         private NetworkConnection _remoteConnection;
 
-        public static IPEndPoint ServerEndpoint => new IPEndPoint(IPAddress.Loopback, ServerPort);
+        public static NetworkAddress ServerEndpoint => NetworkAddress.CreateLocalhost(ServerPort);
 
         private int          _numberCounter;
         private HashSet<int> _numberSet;
@@ -105,7 +106,7 @@ namespace GameLoop.Networking.Transport.Host
             if (isServer)
                 context.Settings.BindingEndpoint = ServerEndpoint;
             else
-                context.Settings.BindingEndpoint = new IPEndPoint(IPAddress.Any, 0);
+                context.Settings.BindingEndpoint = NetworkAddress.CreateAny(0);
 
             context.Settings.SimulatedLoss = .25f;
         }

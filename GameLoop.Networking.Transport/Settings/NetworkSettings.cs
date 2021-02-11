@@ -23,6 +23,7 @@ THE SOFTWARE.
 */
 
 using System.Net;
+using GameLoop.Networking.Sockets;
 
 namespace GameLoop.Networking.Transport.Settings
 {
@@ -41,15 +42,15 @@ namespace GameLoop.Networking.Transport.Settings
 
         public const int AckMaskBits = sizeof(ulong) * 8;
 
-        public IPEndPoint BindingEndpoint;
-        public int        MaxConnectionsAllowed     = 32;
-        public int        MaxConnectionsAttempts    = 10;
-        public double     ConnectionAttemptInterval = .25f;
-        public double     ConnectionTimeout         = 5f;
-        public double     DisconnectionIdleTime     = 2f;
-        public double     KeepAliveInterval         = 1f;
-        public int        SequenceNumberBytes       = 2;
-        public int        SendWindowSize            = 512;
-        public double     SimulatedLoss             = 0;
+        public NetworkAddress BindingEndpoint;
+        public int            MaxConnectionsAllowed     = 32;
+        public int            MaxConnectionsAttempts    = 10;
+        public double         ConnectionAttemptInterval = .25f;
+        public double         ConnectionTimeout         = 5f;
+        public double         DisconnectionIdleTime     = 2f;
+        public double         KeepAliveInterval         = 1f;
+        public int            SequenceNumberBytes       = 2;
+        public int            SendWindowSize            = 512;
+        public double         SimulatedLoss             = 0;
     }
 }

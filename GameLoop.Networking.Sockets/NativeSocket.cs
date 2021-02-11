@@ -26,6 +26,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using GameLoop.Utilities.Asserts;
+using GameLoop.Utilities.Memory;
 using NanoSockets;
 using Socket = NanoSockets.Socket;
 #if LOGS_SOCKET
@@ -89,18 +90,6 @@ namespace GameLoop.Networking.Sockets
             UDP.Deinitialize();
         }
 
-        public void Connect(ref NetworkAddress connectTo)
-        {
-            if (UDP.Connect(_socket, ref connectTo.Address) != 0)
-            {
-                Assert.AlwaysFail($"Cannot connect to {connectTo}");
-            }
-            
-#if LOGS_SOCKET
-            Logger.Debug($"Socket successfully connected to {connectTo}");
-#endif
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int SendTo(NetworkAddress address, byte[] data)
         {
@@ -113,9 +102,24 @@ namespace GameLoop.Networking.Sockets
             return UDP.Send(_socket, ref address.Address, data, length);
         }
 
-        public bool Receive(out NetworkAddress remoteAddress, byte[] buffer, out int receivedBytes)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int SendTo(NetworkAddress address, byte[] data, int offset, int length)
         {
-            Assert.NotNull(buffer);
+            unsafe
+            {
+                fixed (byte* dataPtr = data)
+                {
+                    IntPtr managedPtr = (IntPtr)dataPtr;
+                    managedPtr = IntPtr.Add(managedPtr, offset);
+                    return UDP.Send(_socket, ref address.Address, managedPtr, length);
+                }
+            }
+
+        }
+
+        public bool Receive(out NetworkAddress remoteAddress, MemoryBlock buffer, out int receivedBytes)
+        {
+            Assert.NotNull(buffer.Buffer);
             remoteAddress = default;
 
             if (!Poll(0))
@@ -124,7 +128,7 @@ namespace GameLoop.Networking.Sockets
                 return false;
             }
 
-            receivedBytes = UDP.Receive(_socket, ref remoteAddress.Address, buffer, buffer.Length);
+            receivedBytes = UDP.Receive(_socket, ref remoteAddress.Address, buffer.Buffer, buffer.Size);
 
             if (receivedBytes > 0)
             {
