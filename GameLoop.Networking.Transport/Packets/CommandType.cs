@@ -24,7 +24,7 @@ THE SOFTWARE.
 
 namespace GameLoop.Networking.Transport.Packets
 {
-    public enum CommandType : byte
+    internal enum CommandType : byte
     {
         // From client to server when connecting for the first time.
         ConnectionRequest = 1,

@@ -43,7 +43,7 @@ namespace GameLoop.Utilities.Logs
             var previousConsoleColor = Console.ForegroundColor;
 
             Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.Write(context.Level);
+            Console.Write($"[{context.Level}]");
             Console.Write($"[{context.CallerFile}::{context.CallerMethod}@{context.CallerLine}] ");
             Console.WriteLine(context.Message);
 
@@ -55,7 +55,7 @@ namespace GameLoop.Utilities.Logs
             var previousConsoleColor = Console.ForegroundColor;
 
             Console.ForegroundColor = ConsoleColor.White;
-            Console.Write(context.Level);
+            Console.Write($"[{context.Level}]");
             Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.Write($"[{context.CallerFile}::{context.CallerMethod}@{context.CallerLine}] ");
             Console.ForegroundColor = ConsoleColor.Gray;
@@ -69,7 +69,7 @@ namespace GameLoop.Utilities.Logs
             var previousConsoleColor = Console.ForegroundColor;
 
             Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.Write(context.Level);
+            Console.Write($"[{context.Level}]");
             Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.Write($"[{context.CallerFile}::{context.CallerMethod}@{context.CallerLine}] ");
             Console.ForegroundColor = ConsoleColor.Gray;
@@ -83,7 +83,7 @@ namespace GameLoop.Utilities.Logs
             var previousConsoleColor = Console.ForegroundColor;
 
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.Write(context.Level);
+            Console.Write($"[{context.Level}]");
             Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.Write($"[{context.CallerFile}::{context.CallerMethod}@{context.CallerLine}] ");
             Console.ForegroundColor = ConsoleColor.Gray;

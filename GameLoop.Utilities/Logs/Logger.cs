@@ -47,10 +47,10 @@ namespace GameLoop.Utilities.Logs
             _onErrorCallback   = onError;
 
             _contextPool = new LogContextPool(
-                () => new LogContext() {Level = "[DBG]"},
-                () => new LogContext() {Level = "[INF]"},
-                () => new LogContext() {Level = "[WRN]"},
-                () => new LogContext() {Level = "[ERR]"}
+                () => new LogContext() {Level = "DBG"},
+                () => new LogContext() {Level = "INF"},
+                () => new LogContext() {Level = "WRN"},
+                () => new LogContext() {Level = "ERR"}
             );
 
             _sync = new object();

@@ -28,7 +28,7 @@ using System.Runtime.InteropServices;
 using GameLoop.Utilities.Asserts;
 using NanoSockets;
 using Socket = NanoSockets.Socket;
-#if DEBUG_SOCKET
+#if LOGS_SOCKET
 using GameLoop.Utilities.Logs;
 #endif
 
@@ -73,7 +73,7 @@ namespace GameLoop.Networking.Sockets
 
             UDP.GetAddress(_socket, ref address.Address);
             
-#if DEBUG_SOCKET
+#if LOGS_SOCKET
             Logger.Debug($"Socket successfully bound to {address}");
 #endif
         }
@@ -96,7 +96,7 @@ namespace GameLoop.Networking.Sockets
                 Assert.AlwaysFail($"Cannot connect to {connectTo}");
             }
             
-#if DEBUG_SOCKET
+#if LOGS_SOCKET
             Logger.Debug($"Socket successfully connected to {connectTo}");
 #endif
         }
@@ -128,7 +128,7 @@ namespace GameLoop.Networking.Sockets
 
             if (receivedBytes > 0)
             {
-#if DEBUG_SOCKET
+#if LOGS_SOCKET
                 Logger.Debug($"Received [{receivedBytes}] bytes from {remoteAddress}");
 #endif
 
