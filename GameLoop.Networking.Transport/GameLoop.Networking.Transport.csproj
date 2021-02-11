@@ -6,6 +6,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\GameLoop.Networking.Sockets\GameLoop.Networking.Sockets.csproj" />
       <ProjectReference Include="..\GameLoop.Utilities\GameLoop.Utilities.csproj" />
     </ItemGroup>
 

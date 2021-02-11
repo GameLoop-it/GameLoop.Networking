@@ -26,14 +26,12 @@ using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
-using GameLoop.Networking.Transport.Settings;
-using GameLoop.Utilities.Logs;
 
 namespace GameLoop.Networking.Transport.Sockets
 {
     public sealed class NetworkSocket : INetworkSocket
     {
-        private const int ReceiverBufferSize = NetworkSettings.PacketMtu;
+        private const int ReceiverBufferSize = 256 * 1024;
 
         private Socket   _socket;
         private EndPoint _listeningEndPoint;
@@ -100,7 +98,7 @@ namespace GameLoop.Networking.Transport.Sockets
 
             if (receivedBytes > 0)
             {
-                Logger.Debug($"Received {receivedBytes} bytes from {_receivingFromEndPoint}");
+                //Logger.Debug($"Received {receivedBytes} bytes from {_receivingFromEndPoint}");
                 endPoint = (IPEndPoint) _receivingFromEndPoint;
                 buffer   = _receiveBuffer;
                 return true;

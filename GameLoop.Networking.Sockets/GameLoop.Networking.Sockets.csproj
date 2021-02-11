@@ -2,17 +2,30 @@
 
     <PropertyGroup>
         <TargetFramework>netstandard2.0</TargetFramework>
-        <RootNamespace>GameLoop.Networking.Transport.NanoSockets</RootNamespace>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+      <DefineConstants>TRACE;DEBUG_SOCKET;</DefineConstants>
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\GameLoop.Networking.Transport\GameLoop.Networking.Transport.csproj" />
+      <None Remove="libnanosockets.dylib" />
+      <Content Include="libnanosockets.dylib">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+      <None Remove="libnanosockets.so" />
+      <Content Include="libnanosockets.so">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+      <None Remove="nanosockets.dll" />
+      <Content Include="nanosockets.dll">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
     </ItemGroup>
 
     <ItemGroup>
-      <None Remove="libnanosockets.so" />
-      <None Remove="nanosockets.dll" />
-      <None Remove="nanosockets.dylib" />
+      <ProjectReference Include="..\GameLoop.Utilities\GameLoop.Utilities.csproj" />
     </ItemGroup>
 
 </Project>
