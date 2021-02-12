@@ -127,6 +127,12 @@ namespace GameLoop.Networking.Sockets
         {
             return UDP.Unsafe.Send(_socket, &address.Address, data, length);
         }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int SendTo(NetworkAddress address, IntPtr data, int length)
+        {
+            return UDP.Send(_socket, ref address.Address, data, length);
+        }
 
         public bool Receive(out NetworkAddress remoteAddress, MemoryBlock buffer, out int receivedBytes)
         {
@@ -164,6 +170,31 @@ namespace GameLoop.Networking.Sockets
 
             NetworkAddress receivedFrom = default;
             receivedBytes = UDP.Unsafe.Receive(_socket, &receivedFrom.Address, buffer, bufferLength);
+            remoteAddress = receivedFrom;
+
+            if (receivedBytes > 0)
+            {
+#if LOGS_SOCKET
+                Logger.Debug($"Received [{receivedBytes}] bytes from {remoteAddress}");
+#endif
+
+                return true;
+            }
+
+            return false;
+        }
+        
+        public bool Receive(out NetworkAddress remoteAddress, IntPtr buffer, int bufferLength, out int receivedBytes)
+        {
+            if (!Poll(0))
+            {
+                receivedBytes = 0;
+                remoteAddress = default;
+                return false;
+            }
+
+            NetworkAddress receivedFrom = default;
+            receivedBytes = UDP.Receive(_socket, ref receivedFrom.Address, buffer, bufferLength);
             remoteAddress = receivedFrom;
 
             if (receivedBytes > 0)
