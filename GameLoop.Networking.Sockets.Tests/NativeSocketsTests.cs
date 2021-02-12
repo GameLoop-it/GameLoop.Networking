@@ -150,9 +150,54 @@ namespace GameLoop.Networking.Sockets.Tests
             }
         }
 
-        private unsafe bool TryReceive(NativeSocket socket, out NetworkAddress address, byte* buffer, int bufferLength, out int receivedBytes)
+        [Test]
+        public unsafe void Send_And_Receive_IntPtr_Data()
         {
-            return socket.Receive(out address, buffer, bufferLength, out receivedBytes);
+            var socket1 = BindSocket(0, out var address1);
+            var socket2 = BindSocket(FixedPort, out var address2);
+
+            var dataToSend = new byte[] {5, 6, 2, 7, 7, 5, 44, 12, 0, 4};
+
+            var receivedData = new byte[15];
+            var hasReceived  = false;
+
+            NetworkAddress receivedAddress = default;
+            int            receivedBytes   = 0;
+
+            fixed (byte* dataToSendPtr = dataToSend)
+            {
+                var dataPtr = (IntPtr) dataToSendPtr;
+                Assert.AreEqual(dataToSend.Length, socket1.SendTo(address2, dataPtr, dataToSend.Length));
+            }
+
+            Task.Run(() =>
+            {
+                fixed (byte* receivedDataPtr = receivedData)
+                {
+                    var dataPtr = (IntPtr) receivedDataPtr;
+                    var timer   = new Timer();
+                    timer.Start();
+                    while (true)
+                    {
+                        hasReceived = socket2.Receive(out receivedAddress, dataPtr, receivedData.Length,
+                                                      out receivedBytes);
+
+                        if (hasReceived) return;
+                        if (timer.GetElapsedSeconds() >= .5f) return;
+                    }
+                }
+            });
+            
+            var result = RunAsyncWithTimeout(() => hasReceived == true);
+            
+            Assert.True(result.Success);
+            Assert.AreEqual(dataToSend.Length, receivedBytes);
+            Assert.AreEqual(address1, receivedAddress);
+
+            for (var i = 0; i < dataToSend.Length; i++)
+            {
+                Assert.AreEqual(dataToSend[i], receivedData[i]);
+            }
         }
 
         private NativeSocket BindSocket(ushort port, out NetworkAddress address)
