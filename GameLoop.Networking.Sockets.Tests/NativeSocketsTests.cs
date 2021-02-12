@@ -29,6 +29,7 @@ using NUnit.Framework;
 using Assert = NUnit.Framework.Assert;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using GameLoop.Utilities.Timers;
 
 namespace GameLoop.Networking.Sockets.Tests
 {
@@ -101,6 +102,59 @@ namespace GameLoop.Networking.Sockets.Tests
             }
         }
 
+        [Test]
+        public unsafe void Send_And_Receive_Unsafe_Data()
+        {
+            var socket1 = BindSocket(0, out var address1);
+            var socket2 = BindSocket(FixedPort, out var address2);
+
+            var dataToSend = new byte[] {5, 6, 2, 7, 7, 5, 44, 12, 0, 4};
+
+            var receivedData = new byte[15];
+            var hasReceived  = false;
+
+            NetworkAddress receivedAddress = default;
+            int            receivedBytes   = 0;
+
+            fixed (byte* dataToSendPtr = dataToSend)
+            {
+                Assert.AreEqual(dataToSend.Length, socket1.SendTo(address2, dataToSendPtr, dataToSend.Length));
+            }
+
+            Task.Run(() =>
+            {
+                fixed (byte* receivedDataPtr = receivedData)
+                {
+                    var timer = new Timer();
+                    timer.Start();
+                    while (true)
+                    {
+                        hasReceived = socket2.Receive(out receivedAddress, receivedDataPtr, receivedData.Length,
+                                                      out receivedBytes);
+
+                        if (hasReceived) return;
+                        if (timer.GetElapsedSeconds() >= .5f) return;
+                    }
+                }
+            });
+            
+            var result = RunAsyncWithTimeout(() => hasReceived == true);
+            
+            Assert.True(result.Success);
+            Assert.AreEqual(dataToSend.Length, receivedBytes);
+            Assert.AreEqual(address1, receivedAddress);
+
+            for (var i = 0; i < dataToSend.Length; i++)
+            {
+                Assert.AreEqual(dataToSend[i], receivedData[i]);
+            }
+        }
+
+        private unsafe bool TryReceive(NativeSocket socket, out NetworkAddress address, byte* buffer, int bufferLength, out int receivedBytes)
+        {
+            return socket.Receive(out address, buffer, bufferLength, out receivedBytes);
+        }
+
         private NativeSocket BindSocket(ushort port, out NetworkAddress address)
         {
             var socket = new NativeSocket();
@@ -124,6 +178,11 @@ namespace GameLoop.Networking.Sockets.Tests
             }
         }
 
+        private JobResult RunAsyncWithTimeout(Func<bool> exitCondition, double timeoutSeconds = .5f)
+        {
+            return RunAsyncWithTimeout(null, exitCondition, timeoutSeconds);
+        }
+        
         private JobResult RunAsyncWithTimeout(Action doSomething, Func<bool> exitCondition, double timeoutSeconds = .5f)
         {
             var task = Task.Run(() =>
@@ -133,7 +192,7 @@ namespace GameLoop.Networking.Sockets.Tests
 
                 while (timer.GetElapsedSeconds() <= timeoutSeconds)
                 {
-                    doSomething.Invoke();
+                    doSomething?.Invoke();
                     if (exitCondition.Invoke())
                     {
                         return new JobResult(true, timer.GetElapsedMilliseconds());
