@@ -263,7 +263,7 @@ namespace GameLoop.Networking.Transport
                 // calculate the RoundTripTime.
                 if (distance == 0)
                 {
-                    connection.RoundTripTime = _timer.Now - envelope.Time;
+                    connection.RoundTripTime = _timer.Now() - envelope.Time;
                 }
 
                 // If the distance is less than -64 (so I haven't acked the packet yet and it isn't in the history
@@ -473,7 +473,7 @@ namespace GameLoop.Networking.Transport
             }
 
             var sequenceNumber = connection.SendNetworkSequencer.Next();
-            var sendTime       = _timer.Now;
+            var sendTime       = _timer.Now();
 
             var offset = 0;
 
@@ -579,7 +579,7 @@ namespace GameLoop.Networking.Transport
             var currentConnectionAttemptTime =
                 connection.LastConnectionAttemptTime + _context.Settings.ConnectionAttemptInterval;
 
-            if (currentConnectionAttemptTime < _timer.Now)
+            if (currentConnectionAttemptTime < _timer.Now())
             {
                 if (connection.ConnectionAttempts >= _context.Settings.MaxConnectionsAttempts)
                 {
@@ -596,14 +596,14 @@ namespace GameLoop.Networking.Transport
 
         private void UpdateConnected(NetworkConnection connection)
         {
-            if (connection.LastReceivedPacketTime + _context.Settings.ConnectionTimeout < _timer.Now)
+            if (connection.LastReceivedPacketTime + _context.Settings.ConnectionTimeout < _timer.Now())
             {
                 // If I am here, the connection timed out. The last packet has been received too much time ago, so
                 // I assume we can disconnect the connection.
                 DisconnectConnection(connection, DisconnectionReason.Timeout);
             }
 
-            if (connection.LastSentPacketTime + _context.Settings.KeepAliveInterval < _timer.Now)
+            if (connection.LastSentPacketTime + _context.Settings.KeepAliveInterval < _timer.Now())
             {
                 // If I am here, the connection has not sent data in the past KeepAliveInterval seconds. So to keep
                 // the connection alive, I am going to send a keep alive signal.
@@ -620,14 +620,14 @@ namespace GameLoop.Networking.Transport
             }
 
             connection.ChangeState(ConnectionState.Disconnected);
-            connection.DisconnectionTime = _timer.Now;
+            connection.DisconnectionTime = _timer.Now();
 
             OnDisconnected?.Invoke(connection, reason);
         }
 
         private void UpdateDisconnected(NetworkConnection connection)
         {
-            if (connection.DisconnectionTime + _context.Settings.DisconnectionIdleTime < _timer.Now)
+            if (connection.DisconnectionTime + _context.Settings.DisconnectionIdleTime < _timer.Now())
             {
                 RemoveConnection(connection);
             }
