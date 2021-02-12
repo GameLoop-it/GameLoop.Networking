@@ -95,6 +95,12 @@ namespace GameLoop.Networking.Sockets
         {
             return SendTo(address, data, data.Length);
         }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int SendTo(NetworkAddress address, MemoryBlock data)
+        {
+            return SendTo(address, data.Buffer, data.Size);
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int SendTo(NetworkAddress address, byte[] data, int length)
@@ -114,7 +120,12 @@ namespace GameLoop.Networking.Sockets
                     return UDP.Send(_socket, ref address.Address, managedPtr, length);
                 }
             }
-
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe int SendTo(NetworkAddress address, byte* data, int length)
+        {
+            return UDP.Unsafe.Send(_socket, &address.Address, data, length);
         }
 
         public bool Receive(out NetworkAddress remoteAddress, MemoryBlock buffer, out int receivedBytes)
@@ -129,6 +140,31 @@ namespace GameLoop.Networking.Sockets
             }
 
             receivedBytes = UDP.Receive(_socket, ref remoteAddress.Address, buffer.Buffer, buffer.Size);
+
+            if (receivedBytes > 0)
+            {
+#if LOGS_SOCKET
+                Logger.Debug($"Received [{receivedBytes}] bytes from {remoteAddress}");
+#endif
+
+                return true;
+            }
+
+            return false;
+        }
+        
+        public unsafe bool Receive(out NetworkAddress remoteAddress, byte* buffer, int bufferLength, out int receivedBytes)
+        {
+            if (!Poll(0))
+            {
+                receivedBytes = 0;
+                remoteAddress = default;
+                return false;
+            }
+
+            NetworkAddress receivedFrom = default;
+            receivedBytes = UDP.Unsafe.Receive(_socket, &receivedFrom.Address, buffer, bufferLength);
+            remoteAddress = receivedFrom;
 
             if (receivedBytes > 0)
             {
