@@ -32,7 +32,7 @@ namespace GameLoop.Networking.Transport
     public class NetworkContext
     {
         public NetworkSettings Settings      = new NetworkSettings();
-        public IMemoryManager  MemoryManager = new SimpleMemoryManager(32);
+        public IMemoryManager  MemoryManager = new SimpleMemoryManager(32, NetworkSettings.PacketMtu);
         public PacketPool      PacketPool    = new PacketPool();
     }
 }

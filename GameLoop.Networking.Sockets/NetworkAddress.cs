@@ -63,8 +63,7 @@ namespace GameLoop.Networking.Sockets
         {
             return Create(AnyAddress, port);
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public override string ToString()
         {
             var ip = new StringBuilder(64);

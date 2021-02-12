@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using GameLoop.Networking.Transport.Settings;
 using GameLoop.Utilities.Asserts;
 using GameLoop.Utilities.Memory;
 
@@ -21,7 +20,7 @@ namespace GameLoop.Networking.Transport.Memory
 
         private readonly List<MemoryPoolEntry> _pools;
 
-        public SimpleMemoryManager(int initialBucketsSize)
+        public SimpleMemoryManager(int initialBucketsSize, int maxBlockSize)
         {
             _pools = new List<MemoryPoolEntry>();
 
@@ -30,9 +29,7 @@ namespace GameLoop.Networking.Transport.Memory
             {
                 if (currentBlockSize > 512)
                 {
-                    _pools.Add(new MemoryPoolEntry(NetworkSettings.PacketMtu,
-                                                   new SimpleMemoryPool(NetworkSettings.PacketMtu,
-                                                                        initialBucketsSize)));
+                    _pools.Add(new MemoryPoolEntry(maxBlockSize, new SimpleMemoryPool(maxBlockSize, initialBucketsSize)));
                     break;
                 }
 
