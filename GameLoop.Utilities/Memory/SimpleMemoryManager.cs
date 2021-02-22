@@ -1,10 +1,10 @@
+using System;
 using System.Collections.Generic;
 using GameLoop.Utilities.Asserts;
-using GameLoop.Utilities.Memory;
 
-namespace GameLoop.Networking.Transport.Memory
+namespace GameLoop.Utilities.Memory
 {
-    public class SimpleMemoryManager : IMemoryManager
+    public class SimpleMemoryManager : IMemoryManager, IDisposable
     {
         private struct MemoryPoolEntry
         {
@@ -29,12 +29,11 @@ namespace GameLoop.Networking.Transport.Memory
             {
                 if (currentBlockSize > 512)
                 {
-                    _pools.Add(new MemoryPoolEntry(maxBlockSize, new SimpleMemoryPool(maxBlockSize, initialBucketsSize)));
+                    _pools.Add(new MemoryPoolEntry(maxBlockSize, SimpleMemoryPool.Create(maxBlockSize, initialBucketsSize)));
                     break;
                 }
 
-                _pools.Add(new MemoryPoolEntry(currentBlockSize,
-                                               new SimpleMemoryPool(currentBlockSize, initialBucketsSize)));
+                _pools.Add(new MemoryPoolEntry(currentBlockSize, SimpleMemoryPool.Create(currentBlockSize, initialBucketsSize)));
 
                 currentBlockSize *= 2;
             }
@@ -62,14 +61,14 @@ namespace GameLoop.Networking.Transport.Memory
 
         public void Free(MemoryBlock block)
         {
-            Assert.Check(block.Buffer != null);
+            Assert.Check(block.Buffer != IntPtr.Zero);
             Assert.Check(block.Size   > 0);
 
             for (var i = 0; i < _pools.Count; i++)
             {
                 var currentPoolEntry = _pools[i];
 
-                if (block.Buffer.Length <= currentPoolEntry.BlockSize)
+                if (block.Size <= currentPoolEntry.BlockSize)
                 {
                     currentPoolEntry.Pool.Free(block.Buffer);
                     return;
@@ -77,6 +76,42 @@ namespace GameLoop.Networking.Transport.Memory
             }
 
             Assert.AlwaysFail($"The memory block size of {block.Size} is not supported.");
+        }
+
+        public void Dispose()
+        {
+            foreach (var poolEntry in _pools)
+            {
+                poolEntry.Pool.Dispose();
+            }
+        }
+
+        public bool HasLeakedBlocks
+        {
+            get
+            {
+                foreach (var entry in _pools)
+                {
+                    if (entry.Pool.HasLeakedBlocks)
+                        return true;
+                }
+
+                return false;
+            }
+        }
+
+        public int LeakedBlocksCount
+        {
+            get
+            {
+                var count = 0;
+                foreach (var entry in _pools)
+                {
+                    count += entry.Pool.LeakedBlocksCount;
+                }
+
+                return count;
+            }
         }
     }
 }

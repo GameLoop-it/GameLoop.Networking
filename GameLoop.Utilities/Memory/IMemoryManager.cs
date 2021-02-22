@@ -26,6 +26,9 @@ namespace GameLoop.Utilities.Memory
 {
     public interface IMemoryManager
     {
+        bool HasLeakedBlocks   { get; }
+        int  LeakedBlocksCount { get; }
+        
         MemoryBlock Allocate(int size);
 
         void Free(MemoryBlock block);

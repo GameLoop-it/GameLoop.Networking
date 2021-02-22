@@ -28,7 +28,10 @@ namespace GameLoop.Utilities.Memory
 {
     public interface IMemoryPool : IDisposable
     {
-        byte[] Allocate();
-        void   Free(byte[] block);
+        bool HasLeakedBlocks   { get; }
+        int  LeakedBlocksCount { get; }
+
+        IntPtr Allocate();
+        void   Free(IntPtr block);
     }
 }

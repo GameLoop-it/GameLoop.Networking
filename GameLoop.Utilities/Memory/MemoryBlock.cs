@@ -22,42 +22,75 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using GameLoop.Utilities.Asserts;
 
 namespace GameLoop.Utilities.Memory
 {
+    [StructLayout(LayoutKind.Explicit)]
     public ref struct MemoryBlock
     {
-        public static MemoryBlock InvalidBlock => new MemoryBlock() {Buffer = null, Size = -1};
+        public static MemoryBlock InvalidBlock => new MemoryBlock() {Buffer = IntPtr.Zero, Size = -1};
         
-        public byte[] Buffer;
+        [FieldOffset(0)]
         public int    Size;
+        [FieldOffset(4)]
+        public IntPtr Buffer;
 
         public byte this[int index]
         {
             get
             {
                 Assert.AlwaysCheck(index < Size);
-                return Buffer[index];
+                unsafe
+                {
+                    return *((byte*)Buffer + index);
+                }
             }
             set
             {
                 Assert.AlwaysCheck(index < Size);
-                Buffer[index] = value;
+                unsafe
+                {
+                    *((byte*) Buffer + index) = value;
+                }
             }
         }
 
-        public static implicit operator MemoryBlock(byte[] buffer) =>
-            new MemoryBlock() {Buffer = buffer, Size = buffer.Length};
-
-        public void CopyFrom(byte[] data, int offset, int length)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static MemoryBlock Create(IntPtr buffer, int size)
         {
-            System.Buffer.BlockCopy(data, 0, Buffer, offset, length);
+            return new MemoryBlock()
+            {
+                Buffer = buffer,
+                Size   = size
+            };
         }
         
         public void CopyFrom(MemoryBlock data, int offset, int length)
         {
-            System.Buffer.BlockCopy(data.Buffer, 0, Buffer, offset, length);
+            unsafe
+            {
+                System.Buffer.MemoryCopy(((byte*)data.Buffer + offset), (byte*)Buffer, Size, length);
+            }
+        }
+
+        public void CopyFrom(byte[] data, int offset, int length)
+        {
+            unsafe
+            {
+                for (var i = 0; i < length - offset; i++)
+                {
+                    *((byte*) Buffer + i) = data[offset + i];
+                }
+            }
+        }
+        
+        public void CopyFrom(byte[] data)
+        {
+            CopyFrom(data, 0, data.Length);
         }
     }
 }
