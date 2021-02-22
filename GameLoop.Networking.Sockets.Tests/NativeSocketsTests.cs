@@ -29,6 +29,7 @@ using NUnit.Framework;
 using Assert = NUnit.Framework.Assert;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using GameLoop.Utilities.Memory;
 using GameLoop.Utilities.Timers;
 
 namespace GameLoop.Networking.Sockets.Tests
@@ -36,14 +37,17 @@ namespace GameLoop.Networking.Sockets.Tests
     public class NativeSocketTests
     {
         private const ushort FixedPort = 29000;
+        private const int    MemoryPoolBlockSize = 16;
 
         private List<NativeSocket> _sockets;
+        private IMemoryPool        _memoryPool;
 
         [SetUp]
         public void Setup()
         {
             Logger.InitializeForConsole();
             _sockets = new List<NativeSocket>();
+            _memoryPool = SimpleMemoryPool.Create(MemoryPoolBlockSize, 2);
         }
 
         [TearDown]
@@ -53,6 +57,8 @@ namespace GameLoop.Networking.Sockets.Tests
             {
                 nativeSocket.Close();
             }
+            
+            _memoryPool.Dispose();
         }
 
         [Test]
@@ -77,28 +83,33 @@ namespace GameLoop.Networking.Sockets.Tests
             var socket1 = BindSocket(0, out var address1);
             var socket2 = BindSocket(FixedPort, out var address2);
 
-            var dataToSend1 = new byte[] {5, 6, 2, 7, 7, 5, 44, 12, 0, 4};
-
-            var receivedData = new byte[15];
-            var hasReceived  = false;
+            var dataToSend      = new byte[] {5, 6, 2, 7, 7, 5, 44, 12, 0, 4};
+            var dataToSendBlock = MemoryBlock.Create(_memoryPool.Allocate(), dataToSend.Length);
+            dataToSendBlock.CopyFrom(dataToSend);
+            var dataToSendPtr    = dataToSendBlock.Buffer;
+            
+            var receivedData       = MemoryBlock.Create(_memoryPool.Allocate(), MemoryPoolBlockSize);
+            var receivedDataPtr    = receivedData.Buffer;
+            var receivedDataLength = receivedData.Size;
+            var hasReceived        = false;
 
             NetworkAddress receivedAddress = default;
             int            receivedBytes   = 0;
             
-            Assert.AreEqual(dataToSend1.Length, socket1.SendTo(address2, dataToSend1));
-
+            Assert.AreEqual(dataToSend.Length, socket1.SendTo(address2, dataToSendPtr, dataToSendBlock.Size));
+            
             var result = RunAsyncWithTimeout(
-                () => hasReceived = socket2.Receive(out receivedAddress, receivedData, out receivedBytes),
+                () => hasReceived = socket2.Receive(out receivedAddress, receivedDataPtr, receivedDataLength, out receivedBytes),
                 () => hasReceived == true
             );
 
             Assert.True(result.Success);
-            Assert.AreEqual(dataToSend1.Length, receivedBytes);
+            Assert.AreEqual(dataToSend.Length, receivedBytes);
             Assert.AreEqual(address1, receivedAddress);
 
-            for (var i = 0; i < dataToSend1.Length; i++)
+            for (var i = 0; i < dataToSend.Length; i++)
             {
-                Assert.AreEqual(dataToSend1[i], receivedData[i]);
+                Assert.AreEqual(dataToSendBlock[i], receivedData[i]);
             }
         }
 
