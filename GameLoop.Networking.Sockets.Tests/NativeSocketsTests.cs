@@ -47,7 +47,7 @@ namespace GameLoop.Networking.Sockets.Tests
         {
             Logger.InitializeForConsole();
             _sockets = new List<NativeSocket>();
-            _memoryPool = SimpleMemoryPool.Create(MemoryPoolBlockSize, 2);
+            _memoryPool = MemoryPool.Create(MemoryPoolBlockSize, 2);
         }
 
         [TearDown]
@@ -84,11 +84,13 @@ namespace GameLoop.Networking.Sockets.Tests
             var socket2 = BindSocket(FixedPort, out var address2);
 
             var dataToSend      = new byte[] {5, 6, 2, 7, 7, 5, 44, 12, 0, 4};
-            var dataToSendBlock = MemoryBlock.Create(_memoryPool.Allocate(), dataToSend.Length);
+            _memoryPool.TryAllocate(out var sendBlock);
+            var dataToSendBlock = MemoryBlock.Create(sendBlock, dataToSend.Length);
             dataToSendBlock.CopyFrom(dataToSend);
             var dataToSendPtr    = dataToSendBlock.Buffer;
             
-            var receivedData       = MemoryBlock.Create(_memoryPool.Allocate(), MemoryPoolBlockSize);
+            _memoryPool.TryAllocate(out var receiveBlock);
+            var receivedData       = MemoryBlock.Create(receiveBlock, MemoryPoolBlockSize);
             var receivedDataPtr    = receivedData.Buffer;
             var receivedDataLength = receivedData.Size;
             var hasReceived        = false;
