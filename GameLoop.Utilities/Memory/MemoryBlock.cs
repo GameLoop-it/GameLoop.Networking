@@ -38,6 +38,17 @@ namespace GameLoop.Utilities.Memory
         public int    Size;
         [FieldOffset(4)]
         public IntPtr Buffer;
+        
+        public Span<byte> Span
+        {
+            get
+            {
+                unsafe
+                {
+                    return new Span<byte>(((byte*) Buffer), Size);
+                }
+            }
+        }
 
         public byte this[int index]
         {
@@ -73,7 +84,15 @@ namespace GameLoop.Utilities.Memory
         {
             unsafe
             {
-                System.Buffer.MemoryCopy(((byte*)data.Buffer + offset), (byte*)Buffer, Size, length);
+                System.Buffer.MemoryCopy(((byte*)data.Buffer), (byte*)Buffer + offset, Size, length);
+            }
+        }
+        
+        public void CopyFrom(IntPtr data, int offset, int length)
+        {
+            unsafe
+            {
+                System.Buffer.MemoryCopy(((byte*)data), (byte*)Buffer + offset, Size, length);
             }
         }
 
@@ -83,7 +102,7 @@ namespace GameLoop.Utilities.Memory
             {
                 for (var i = 0; i < length - offset; i++)
                 {
-                    *((byte*) Buffer + i) = data[offset + i];
+                    *((byte*) Buffer + i) = data[i];
                 }
             }
         }

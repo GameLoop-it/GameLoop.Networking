@@ -30,8 +30,14 @@ namespace GameLoop.Utilities.Memory
     {
         bool HasLeakedBlocks   { get; }
         int  LeakedBlocksCount { get; }
+        bool IsEmpty           { get; }
+        
+        int AvailableMemoryInBytes { get; }
 
-        IntPtr Allocate();
-        void   Free(IntPtr block);
+        bool TryAllocate(out IntPtr blockPtr);
+
+        void Free(IntPtr blockPtr);
+
+        bool IsOwnerOf(IntPtr blockPtr);
     }
 }

@@ -6,7 +6,7 @@ using GameLoop.Utilities.Asserts;
 
 namespace GameLoop.Utilities.Memory
 {
-    public class SimpleMemoryPool : IDisposable, IMemoryPool
+    public class MemoryPool : IDisposable, IMemoryPool
     {
         [StructLayout(LayoutKind.Explicit)]
         private struct MemoryPoolBlock
@@ -21,19 +21,36 @@ namespace GameLoop.Utilities.Memory
 
         private int _currentLeakedBlocks;
 
-        public bool HasLeakedBlocks   => _currentLeakedBlocks > 0;
-        public int  LeakedBlocksCount => _currentLeakedBlocks;
+        public bool HasLeakedBlocks        => _currentLeakedBlocks > 0;
+        public int  LeakedBlocksCount      => _currentLeakedBlocks;
+        public bool IsEmpty                => _currentLeakedBlocks >= _blocksCount;
+        public int  AvailableMemoryInBytes => _blocksCount * _blockSize;
 
-        private SimpleMemoryPool()
+        private MemoryPool()
         {
         }
 
-        public static SimpleMemoryPool Create(int blockSize, int blocksAmount)
+        public static int MinimumBlockSize
+        {
+            get
+            {
+                unsafe
+                {
+                    return sizeof(MemoryPoolBlock);
+                }
+            }
+        }
+        
+        public static MemoryPool Create(int blockSize, int blocksAmount)
         {
             Assert.AlwaysCheck(blockSize    > 0);
             Assert.AlwaysCheck(blocksAmount > 0);
+            unsafe
+            {
+                Assert.AlwaysCheck(blockSize >= MinimumBlockSize);
+            }
 
-            var pool = new SimpleMemoryPool();
+            var pool = new MemoryPool();
 
             pool._blockSize     = blockSize;
             pool._blocksCount   = blocksAmount;
@@ -58,21 +75,7 @@ namespace GameLoop.Utilities.Memory
             }
         }
 
-        private static void RaiseOutOfMemoryException()
-        {
-            throw new OutOfMemoryException();
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IntPtr Allocate()
-        {
-            if (TryGetBlock(out var block)) return block;
-
-            RaiseOutOfMemoryException();
-            return default;
-        }
-
-        public bool TryGetBlock(out IntPtr blockPtr)
+        public bool TryAllocate(out IntPtr blockPtr)
         {
             IntPtr nextFreeBlock = _nextFreeBlock;
 
@@ -105,6 +108,14 @@ namespace GameLoop.Utilities.Memory
 
                 _nextFreeBlock = blockPtr;
                 Interlocked.Decrement(ref _currentLeakedBlocks);
+            }
+        }
+
+        public bool IsOwnerOf(IntPtr blockPtr)
+        {
+            unsafe
+            {
+                return ((byte*) blockPtr >= (byte*) _root) && ((byte*)blockPtr <= (byte*)_root + AvailableMemoryInBytes);
             }
         }
 

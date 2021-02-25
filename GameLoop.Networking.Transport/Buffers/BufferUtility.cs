@@ -22,11 +22,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+using System;
+
 namespace GameLoop.Networking.Transport.Buffers
 {
     public static unsafe class BufferUtility
     {
-        public static void WriteUInt64(byte[] targetBuffer, ulong value, int offset, int length = sizeof(ulong))
+        public static void WriteUInt64(Span<byte> targetBuffer, ulong value, int offset, int length = sizeof(ulong))
         {
             byte* valuePtr = (byte*) &value;
 
@@ -36,7 +38,7 @@ namespace GameLoop.Networking.Transport.Buffers
             }
         }
 
-        public static ulong ReadUInt64(byte[] targetBuffer, int offset, int length = sizeof(ulong))
+        public static ulong ReadUInt64(Span<byte> targetBuffer, int offset, int length = sizeof(ulong))
         {
             ulong value    = 0;
             byte* valuePtr = (byte*) &value;
