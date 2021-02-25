@@ -22,7 +22,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-using System.Net;
 using GameLoop.Networking.Sockets;
 
 namespace GameLoop.Networking.Transport.Settings
@@ -51,6 +50,12 @@ namespace GameLoop.Networking.Transport.Settings
         public double         KeepAliveInterval         = 1f;
         public int            SequenceNumberBytes       = 2;
         public int            SendWindowSize            = 512;
-        public double         SimulatedLoss             = 0;
+        
+        // The notify packet is composed by:
+        // - PacketType.Notify                  - 1 byte
+        // - Sequence number for this packet    - SequenceNumberBytes bytes
+        // - Last received sequence number      - SequenceNumberBytes bytes
+        // - ReceivedHistoryMask                - 8 bytes
+        public int NotifyHeaderSize => 1 + 8 + (SequenceNumberBytes * 2);
     }
 }

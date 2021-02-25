@@ -22,17 +22,32 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-using GameLoop.Networking.Transport.Memory;
 using GameLoop.Networking.Transport.Packets;
 using GameLoop.Networking.Transport.Settings;
+using GameLoop.Networking.Transport.Simulators;
 using GameLoop.Utilities.Memory;
 
 namespace GameLoop.Networking.Transport
 {
     public class NetworkContext
     {
-        public NetworkSettings Settings      = new NetworkSettings();
-        public IMemoryManager  MemoryManager = new SimpleMemoryManager(32, NetworkSettings.PacketMtu);
-        public PacketPool      PacketPool    = new PacketPool();
+        public NetworkSettings       Settings;
+        public IMemoryManager        MemoryManager;
+        public PacketPool            PacketPool;
+        public INetworkLossSimulator LossSimulator;
+
+        public NetworkContext()
+        {
+            Settings      = new NetworkSettings();
+            MemoryManager = new MemoryManager(32, NetworkSettings.PacketMtu);
+            PacketPool    = new PacketPool(MemoryManager);
+        }
+
+        public NetworkContext(NetworkSettings settings, IMemoryManager memoryManager)
+        {
+            Settings      = settings;
+            MemoryManager = memoryManager;
+            PacketPool    = new PacketPool(memoryManager);
+        }
     }
 }

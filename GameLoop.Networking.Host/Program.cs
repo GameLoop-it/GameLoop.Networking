@@ -28,6 +28,7 @@ using System.Net;
 using System.Threading;
 using GameLoop.Networking.Sockets;
 using GameLoop.Networking.Transport.Packets;
+using GameLoop.Networking.Transport.Simulators;
 using GameLoop.Utilities.Logs;
 
 namespace GameLoop.Networking.Transport.Host
@@ -39,6 +40,8 @@ namespace GameLoop.Networking.Transport.Host
         public const int NumberCount = 16;
 
         public NetworkPeer Peer;
+
+        private NetworkContext _context;
 
         public bool IsServer => _isServer;
         public bool IsClient => !_isServer;
@@ -84,8 +87,11 @@ namespace GameLoop.Networking.Transport.Host
 
         private void PeerOnUnreliablePacket(NetworkConnection connection, Packet packet)
         {
-            var number = BitConverter.ToInt32(packet.Data, packet.Offset);
-            Logger.DebugInfo($"Unreliably received: {number}");
+            unsafe
+            {
+                var number = BitConverter.ToInt32(new ReadOnlySpan<byte>(((byte*) packet.Data + packet.Offset), sizeof(int)));
+                Logger.DebugInfo($"Unreliably received: {number}");
+            }
         }
 
         private void PeerOnConnected(NetworkConnection connection)
@@ -93,22 +99,22 @@ namespace GameLoop.Networking.Transport.Host
             _remoteConnection = connection;
         }
 
-        private static NetworkContext GetNetworkContext(bool isServer)
+        private NetworkContext GetNetworkContext(bool isServer)
         {
-            var context = new NetworkContext();
-            GetNetworkSettings(isServer, context);
+            _context = new NetworkContext();
+            GetNetworkSettings(isServer, _context);
 
-            return context;
+            return _context;
         }
 
-        private static void GetNetworkSettings(bool isServer, NetworkContext context)
+        private void GetNetworkSettings(bool isServer, NetworkContext context)
         {
             if (isServer)
                 context.Settings.BindingEndpoint = ServerEndpoint;
             else
                 context.Settings.BindingEndpoint = NetworkAddress.CreateAny(0);
 
-            context.Settings.SimulatedLoss = .25f;
+            context.LossSimulator = new RandomLossSimulator(.25f);
         }
 
         public void Update()
@@ -119,11 +125,20 @@ namespace GameLoop.Networking.Transport.Host
             {
                 if (IsClient && _numberCounter < NumberCount)
                 {
-                    Peer?.SendNotify(_remoteConnection, BitConverter.GetBytes(++_numberCounter), _numberCounter);
+                    var block = _context.MemoryManager.Allocate(4);
+                    block.CopyFrom(BitConverter.GetBytes(++_numberCounter), 0, 4);
+                    
+                    Peer?.SendNotify(_remoteConnection, block, _numberCounter);
+                    
+                    _context.MemoryManager.Free(block);
                 }
                 else
                 {
-                    Peer?.SendNotify(_remoteConnection, new byte[0], null);
+                    var block = _context.MemoryManager.Allocate(1);
+                    
+                    Peer?.SendNotify(_remoteConnection, block, null);
+                    
+                    _context.MemoryManager.Free(block);
                 }
             }
         }
