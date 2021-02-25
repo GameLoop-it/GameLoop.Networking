@@ -22,12 +22,43 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+using System;
+using GameLoop.Utilities.Memory;
+
 namespace GameLoop.Networking.Transport.Packets
 {
-    public class Packet
+    public struct Packet
     {
-        public byte[] Data;
+        public IntPtr Data;
         public int    Offset;
         public int    Length;
+
+        public Span<byte> Span
+        {
+            get
+            {
+                unsafe
+                {
+                    return new Span<byte>(((byte*) Data), Length);
+                }
+            }
+        }
+
+        public Packet(MemoryBlock block)
+        {
+            Data   = block.Buffer;
+            Offset = 0;
+            Length = block.Size;
+        }
+
+        public static Packet Create(IntPtr data, int length)
+        {
+            return new Packet()
+            {
+                Data   = data,
+                Offset = 0,
+                Length = length
+            };
+        }
     }
 }

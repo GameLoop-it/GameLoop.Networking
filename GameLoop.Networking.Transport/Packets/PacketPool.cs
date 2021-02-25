@@ -22,12 +22,90 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+using System;
+using System.Collections.Generic;
+using GameLoop.Utilities.Memory;
+
 namespace GameLoop.Networking.Transport.Packets
 {
-    public class PacketPool
+    public class PacketPool : IDisposable
     {
-        public readonly byte[] ConnectionRequestPacket = {(byte) PacketType.Command, (byte) CommandType.ConnectionRequest };
-        public readonly byte[] ConnectionAcceptedPacket = {(byte) PacketType.Command, (byte) CommandType.ConnectionAccepted };
-        public readonly byte[] KeepAlivePacket = {(byte) PacketType.KeepAlive};
+        internal class PacketStatics
+        {
+            public Packet ConnectionRequestPacket;
+            public Packet ConnectionAcceptedPacket;
+            public Packet KeepAlivePacket;
+            
+            public PacketStatics(IMemoryManager memoryManager)
+            {
+                InitializeConnectionRequestPacket(memoryManager);
+                InitializeConnectionAcceptedPacket(memoryManager);
+                InitializeKeepAlivePacket(memoryManager);
+            }
+            
+            private void InitializeConnectionRequestPacket(IMemoryManager memoryManager)
+            {
+                ConnectionRequestPacket = new Packet(memoryManager.Allocate(2));
+                var span = ConnectionRequestPacket.Span;
+                span[0] = (byte) PacketType.Command;
+                span[1] = (byte) CommandType.ConnectionRequest;
+            }
+        
+            private void InitializeConnectionAcceptedPacket(IMemoryManager memoryManager)
+            {
+                ConnectionAcceptedPacket = new Packet(memoryManager.Allocate(2));
+                var span = ConnectionAcceptedPacket.Span;
+                span[0] = (byte) PacketType.Command;
+                span[1] = (byte) CommandType.ConnectionAccepted;
+            }
+        
+            private void InitializeKeepAlivePacket(IMemoryManager memoryManager)
+            {
+                KeepAlivePacket = new Packet(memoryManager.Allocate(1));
+                var span = KeepAlivePacket.Span;
+                span[0] = (byte) PacketType.KeepAlive;
+            }
+        }
+
+        internal PacketStatics Statics;
+
+        private readonly IMemoryManager _memoryManager;
+        private readonly Queue<Packet>  _packetsPool;
+        
+        public PacketPool(IMemoryManager memoryManager)
+        {
+            _memoryManager = memoryManager;
+            _packetsPool   = new Queue<Packet>();
+            Statics        = new PacketStatics(memoryManager);
+        }
+
+        public Packet GetPacket(IntPtr buffer, int length)
+        {
+            Packet packet;
+            
+            if (_packetsPool.Count > 0)
+            {
+                packet = _packetsPool.Dequeue();
+            }
+            else
+            {
+                packet = new Packet();
+            }
+            
+            packet.Data   = buffer;
+            packet.Offset = 0;
+            packet.Length = length;
+            
+            return packet;
+        }
+
+        public void RecyclePacket(Packet packet)
+        {
+            _packetsPool.Enqueue(packet);
+        }
+
+        public void Dispose()
+        {
+        }
     }
 }
