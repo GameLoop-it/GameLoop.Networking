@@ -43,6 +43,17 @@ namespace GameLoop.Networking.Transport.Packets
                 }
             }
         }
+        
+        public Span<byte> SpanFromOffset
+        {
+            get
+            {
+                unsafe
+                {
+                    return new Span<byte>(((byte*) Data + Offset), Length - Offset);
+                }
+            }
+        }
 
         public Packet(MemoryBlock block)
         {
