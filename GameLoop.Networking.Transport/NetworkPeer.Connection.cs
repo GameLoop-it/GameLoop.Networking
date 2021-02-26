@@ -64,8 +64,9 @@ namespace GameLoop.Networking.Transport
 
         private void UpdateConnections()
         {
-            foreach (var connection in _connections.Connections)
+            for (var i = _connections.Count - 1; i >= 0; i--)
             {
+                var connection = _connections.Connections[i];
                 UpdateConnection(connection);
             }
         }

@@ -34,7 +34,7 @@ namespace GameLoop.Networking.Transport.Collections
 
         public int Count => _connections.Count;
 
-        public IReadOnlyList<NetworkConnection> Connections => _connections;
+        public List<NetworkConnection> Connections => _connections;
 
         public ConnectionCollection()
         {
