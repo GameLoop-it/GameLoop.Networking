@@ -316,7 +316,7 @@ namespace GameLoop.Networking.Transport
         
         private void HandleDisconnection(NetworkConnection connection, Packet packet)
         {
-            DisconnectConnection(connection, (DisconnectionReason) packet.Span[3], false);
+            DisconnectConnection(connection, (DisconnectionReason) packet.Span[2], false);
         }
     }
 }
